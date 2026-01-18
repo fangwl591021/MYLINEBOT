@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE OA 管理系統 - GitHub 版</title>
+    <title>LINE OA 管理系統 - 完整功能版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
@@ -16,21 +16,16 @@
             --border-color: #e5e7eb;
         }
 
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: var(--bg-gray);
-            overflow: hidden;
-        }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--bg-gray); overflow: hidden; }
 
-        /* 佈局樣式 */
+        /* 介面框架 */
         .sidebar { width: var(--sidebar-width); background-color: #2b303b; color: #ffffff; }
         .sidebar-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; transition: all 0.2s; color: #a1a1a1; cursor: pointer; }
         .sidebar-item:hover { background-color: #3e4451; color: #ffffff; }
         .sidebar-item.active { background-color: #3e4451; color: #ffffff; border-left: 4px solid var(--line-green); }
-
         .header { height: 56px; background-color: #ffffff; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 24px; justify-content: space-between; }
         
-        /* 頁籤 */
+        /* 頁籤控制 */
         .tab-btn { padding: 12px 24px; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; transition: all 0.2s; }
         .tab-btn.active { color: var(--line-green); border-bottom-color: var(--line-green); }
 
@@ -40,8 +35,8 @@
         .aspect-1-1 { aspect-ratio: 1 / 1; }
         .aspect-16-9 { aspect-ratio: 16 / 9; }
         .aspect-4-3 { aspect-ratio: 4 / 3; }
+        .aspect-1_91-1 { aspect-ratio: 1.91 / 1; }
 
-        /* 滾動條 */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
@@ -52,15 +47,12 @@
         .card-table th { text-align: left; background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid var(--border-color); color: #4b5563; font-size: 14px; }
         .card-table td { padding: 16px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
         
-        /* SVG 圖示共用 */
-        .icon { width: 20px; height: 20px; stroke-width: 2; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-        .icon-sm { width: 16px; height: 16px; }
-        .icon-xs { width: 12px; height: 12px; }
+        .icon { width: 18px; height: 18px; stroke-width: 2; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     </style>
 </head>
 <body class="h-screen flex">
 
-    <!-- 圖示庫 (不佔位) -->
+    <!-- 圖示庫 -->
     <svg style="display: none;">
         <symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
         <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
@@ -69,40 +61,40 @@
         <symbol id="icon-plus" viewBox="0 0 24 24"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></symbol>
         <symbol id="icon-chevron-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
         <symbol id="icon-copy" viewBox="0 0 24 24"><rect width="13" height="13" x="9" y="9" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
-        <symbol id="icon-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
-        <symbol id="icon-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></symbol>
-        <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+        <symbol id="icon-undo" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></symbol>
         <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
     </svg>
 
     <!-- 側邊導覽列 -->
-    <aside class="sidebar h-full flex flex-col shrink-0 z-30 shadow-xl">
+    <aside class="sidebar h-full flex flex-col shrink-0 z-30">
         <div class="p-6 flex items-center gap-3">
             <div class="bg-line-green p-1.5 rounded-lg text-white">
                 <svg class="icon"><use href="#icon-message"/></svg>
             </div>
-            <span class="font-bold text-lg tracking-tight">OA 管理系統</span>
+            <span class="font-bold text-lg tracking-tight">管理系統</span>
         </div>
         <nav class="flex-1 mt-4">
             <div class="sidebar-item" onclick="location.reload()"><svg class="icon"><use href="#icon-home"/></svg> 首頁儀表板</div>
-            <div class="sidebar-item active"><svg class="icon"><use href="#icon-layers"/></svg> 多頁訊息模組</div>
+            <div class="sidebar-item active"><svg class="icon"><use href="#icon-layers"/></svg> 多頁訊息管理</div>
             <div class="sidebar-item"><svg class="icon"><use href="#icon-layout"/></svg> 圖文選單管理</div>
         </nav>
-        <div class="p-4 bg-black/10 text-[10px] text-gray-400 text-center">Version 1.2.0 Stable</div>
     </aside>
 
     <div class="flex-1 flex flex-col overflow-hidden">
         <!-- 頂部 Header -->
-        <header class="header shrink-0 shadow-sm z-20">
+        <header class="header shrink-0">
             <div class="flex items-center gap-2 text-sm text-gray-500">
-                <span>內容管理</span> 
-                <svg class="icon icon-xs"><use href="#icon-chevron-right"/></svg>
-                <span class="text-gray-900 font-medium" id="header-title">多頁訊息</span>
+                <span>內容管理</span> <svg class="icon w-3 h-3 text-gray-400"><use href="#icon-chevron-right"/></svg>
+                <span class="text-gray-900 font-medium">多頁訊息管理</span>
             </div>
             <div id="editor-actions" class="hidden flex gap-2">
-                <button onclick="exitEditor()" class="px-4 py-1.5 text-sm font-bold text-slate-600 border border-slate-300 rounded hover:bg-slate-100 transition">取消返回</button>
-                <button onclick="exportJSON()" class="px-4 py-1.5 text-sm font-bold text-white bg-slate-900 rounded hover:bg-slate-800 flex items-center gap-2 transition shadow-md">
-                    <svg class="icon icon-sm"><use href="#icon-copy"/></svg> 複製 JSON
+                <button onclick="undo()" id="btn-undo" disabled class="px-3 py-1.5 text-xs font-bold text-slate-600 border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 flex items-center gap-1">
+                    <svg class="icon w-3 h-3"><use href="#icon-undo"/></svg> 復原
+                </button>
+                <button onclick="exitEditor()" class="px-3 py-1.5 text-xs font-bold text-slate-600 border border-slate-300 rounded hover:bg-slate-100">返回</button>
+                <button onclick="exportJSON()" class="px-3 py-1.5 text-xs font-bold text-white bg-slate-900 rounded hover:bg-slate-800 flex items-center gap-2 transition shadow-lg">
+                    <svg class="icon w-3 h-3"><use href="#icon-copy"/></svg> 複製 JSON
                 </button>
             </div>
         </header>
@@ -112,36 +104,24 @@
             <div class="max-w-6xl mx-auto">
                 <div class="flex justify-between items-end mb-6">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800">訊息內容管理</h2>
-                        <p class="text-gray-500 text-sm mt-1">您可以建立、編輯並預覽 LINE Flex Message 模組。</p>
+                        <h2 class="text-2xl font-bold text-gray-800">多頁訊息管理</h2>
+                        <p class="text-gray-500 text-sm mt-1">在這裡管理商品模組、單頁與多頁訊息。</p>
                     </div>
-                    <button onclick="enterEditor()" class="btn-primary flex items-center gap-2 transition shadow-lg">
-                        <svg class="icon icon-sm"><use href="#icon-plus"/></svg> 建立新訊息
+                    <button onclick="enterEditor()" class="btn-primary flex items-center gap-2 transition shadow-md">
+                        <svg class="icon w-4 h-4"><use href="#icon-plus"/></svg> 建立新訊息
                     </button>
                 </div>
 
-                <!-- 模組切換頁籤 -->
-                <div class="bg-white rounded-t-lg border-b border-gray-200 flex overflow-hidden">
+                <div class="bg-white rounded-t-lg border-b border-gray-200 flex">
                     <button onclick="switchListTab('product')" id="tab-product" class="tab-btn active">商品模組</button>
                     <button onclick="switchListTab('single')" id="tab-single" class="tab-btn">單頁模組</button>
                     <button onclick="switchListTab('multi')" id="tab-multi" class="tab-btn">多頁模組</button>
                 </div>
 
-                <!-- 資料表格 -->
                 <div class="bg-white rounded-b-lg shadow-sm overflow-hidden border border-t-0 border-gray-200">
                     <table class="card-table">
-                        <thead>
-                            <tr>
-                                <th>模組名稱</th>
-                                <th>內容摘要</th>
-                                <th>最後更新</th>
-                                <th>當前狀態</th>
-                                <th>操作選項</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body">
-                            <!-- JS 動態插入 -->
-                        </tbody>
+                        <thead><tr><th>名稱</th><th>摘要</th><th>最後更新</th><th>狀態</th><th>操作</th></tr></thead>
+                        <tbody id="table-body"></tbody>
                     </table>
                 </div>
             </div>
@@ -149,97 +129,126 @@
 
         <!-- 編輯器視圖 -->
         <main id="view-editor" class="flex-1 hidden overflow-hidden flex">
-            <!-- 左側編輯面板 -->
-            <aside class="w-[420px] bg-white border-r border-slate-200 overflow-y-auto p-5 space-y-6 custom-scrollbar shadow-inner">
+            <aside class="w-[450px] bg-white border-r border-slate-200 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+                
                 <!-- Hero 設定 -->
-                <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
-                    <div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <svg class="icon icon-sm text-slate-400"><use href="#icon-image"/></svg> 頂部視覺 (Hero)
+                <div class="border-2 border-line-green rounded-xl overflow-hidden shadow-sm">
+                    <div class="p-3 bg-line-green text-white font-bold text-sm flex items-center gap-2">
+                        <svg class="icon"><use href="#icon-image"/></svg> 頂部 Hero 設定
                     </div>
                     <div class="p-4 space-y-4">
-                        <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                            <button onclick="updateHeroType('image')" id="btn-type-image" class="flex-1 py-1.5 text-xs font-bold rounded-md transition">圖片</button>
-                            <button onclick="updateHeroType('video')" id="btn-type-video" class="flex-1 py-1.5 text-xs font-bold rounded-md transition">影片</button>
+                        <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-300">
+                            <button onclick="updateHeroType('image')" id="btn-type-image" class="flex-1 py-1.5 text-xs font-bold rounded-md transition">靜態圖片</button>
+                            <button onclick="updateHeroType('video')" id="btn-type-video" class="flex-1 py-1.5 text-xs font-bold rounded-md transition">影片播放</button>
                             <button onclick="updateHeroType('none')" id="btn-type-none" class="flex-1 py-1.5 text-xs font-bold rounded-md transition">無</button>
                         </div>
-                        <div class="space-y-3" id="hero-inputs">
+                        <div class="space-y-3">
                             <div>
-                                <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">顯示比例</label>
-                                <select id="hero-aspect" onchange="updateConfig('heroAspect', this.value)" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-line-green/20 focus:border-line-green transition">
-                                    <option value="16:9">16:9 (寬螢幕)</option>
-                                    <option value="1:1">1:1 (正方形)</option>
-                                    <option value="4:3">4:3 (矩形)</option>
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">顯示比例</label>
+                                <select id="hero-aspect" onchange="updateConfig('heroAspect', this.value)" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-1 focus:ring-green-500">
+                                    <option value="16:9">16:9</option><option value="1:1">1:1</option><option value="4:3">4:3</option><option value="1.91:1">1.91:1</option>
                                 </select>
                             </div>
-                            <div>
-                                <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">素材連結網址</label>
-                                <input type="text" id="input-hero-url" oninput="updateConfig('heroUrl', this.value)" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-line-green/20 focus:border-line-green transition outline-none" placeholder="https://...">
+                            <div id="field-hero-url">
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1" id="label-hero-url">圖片網址</label>
+                                <input type="text" id="input-hero-url" oninput="updateConfig('heroUrl', this.value)" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none" placeholder="https://...">
+                            </div>
+                            <div id="field-video-url" class="hidden">
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">影片連結 (.mp4)</label>
+                                <input type="text" id="input-video-url" oninput="updateConfig('videoUrl', this.value)" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none" placeholder="https://...">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 商品清單 -->
-                <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
-                    <div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm flex justify-between items-center">
-                        <div class="flex items-center gap-2"><svg class="icon icon-sm text-slate-400"><use href="#icon-palette"/></svg> 商品內容設定</div>
-                        <select onchange="state.body.columns=parseInt(this.value);renderPreview();" class="text-[10px] border border-slate-300 rounded px-2 py-1 outline-none">
-                            <option value="3">3 欄展示</option>
-                            <option value="4">4 欄展示</option>
-                        </select>
+                <!-- Body 商品模組 -->
+                <div class="border-2 border-line-green rounded-xl overflow-hidden shadow-sm">
+                    <div class="p-3 bg-line-green text-white font-bold text-sm flex items-center gap-2">
+                        <svg class="icon"><use href="#icon-layout"/></svg> 商品內容設定
                     </div>
-                    <div class="p-4 space-y-3">
-                        <div id="items-container" class="space-y-3">
+                    <div class="p-4 space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">每行欄數</label>
+                                <select id="body-columns" onchange="updateConfig('columns', parseInt(this.value))" class="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none">
+                                    <option value="3">3 欄</option><option value="4">4 欄</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">標籤背景色</label>
+                                <div class="flex items-center gap-2 border p-1 rounded-lg">
+                                    <input type="color" id="input-tag-bg-color" onchange="updateConfig('tagBgColor', this.value)" class="w-6 h-6 border-none cursor-pointer">
+                                    <input type="text" id="text-tag-bg-color" oninput="updateConfig('tagBgColor', this.value)" class="flex-1 text-[10px] uppercase outline-none font-mono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="items-container" class="space-y-4">
                             <!-- JS 動態插入項目 -->
                         </div>
-                        <button onclick="addItem()" class="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 text-xs font-bold hover:border-line-green hover:text-line-green hover:bg-emerald-50 transition-all flex items-center justify-center gap-2">
-                            <svg class="icon icon-xs"><use href="#icon-plus"/></svg> 新增商品項目
+                        
+                        <button onclick="addItem()" class="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 text-xs font-bold hover:border-green-500 hover:text-green-500 transition-all flex items-center justify-center gap-2">
+                            <svg class="icon w-4 h-4"><use href="#icon-plus"/></svg> 新增商品
                         </button>
                     </div>
                 </div>
 
-                <!-- Footer 按鈕 -->
-                <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
-                    <div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm">底部操作按鈕</div>
+                <!-- Footer 設定 -->
+                <div class="border-2 border-line-green rounded-xl overflow-hidden shadow-sm">
+                    <div class="p-3 bg-line-green text-white font-bold text-sm flex items-center gap-2">
+                        <svg class="icon"><use href="#icon-message"/></svg> 底部按鈕設定
+                    </div>
                     <div class="p-4 space-y-4">
-                        <input type="text" id="input-btn1" oninput="state.footer.btn1.label=this.value;renderPreview();" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none" placeholder="按鈕 1 名稱">
-                        <input type="text" id="input-btn2" oninput="state.footer.btn2.label=this.value;renderPreview();" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none" placeholder="按鈕 2 名稱">
+                        <!-- 按鈕 1 -->
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">按鈕 1 (左)</label>
+                                <div class="flex items-center gap-1">
+                                    <input type="color" id="input-f1-color" onchange="updateConfig('f1C', this.value)" class="w-5 h-5 border-none cursor-pointer">
+                                    <span class="text-[9px] font-mono text-slate-400 uppercase" id="text-f1-color">#000000</span>
+                                </div>
+                            </div>
+                            <input type="text" id="input-f1-label" oninput="updateConfig('f1L', this.value)" class="w-full text-xs p-2 border rounded outline-none" placeholder="按鈕名稱">
+                            <input type="text" id="input-f1-uri" oninput="updateConfig('f1U', this.value)" class="w-full text-[10px] p-2 border rounded font-mono outline-none" placeholder="連結 (https://...)">
+                        </div>
+                        <!-- 按鈕 2 -->
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">按鈕 2 (右)</label>
+                                <div class="flex items-center gap-1">
+                                    <input type="color" id="input-f2-color" onchange="updateConfig('f2C', this.value)" class="w-5 h-5 border-none cursor-pointer">
+                                    <span class="text-[9px] font-mono text-slate-400 uppercase" id="text-f2-color">#000000</span>
+                                </div>
+                            </div>
+                            <input type="text" id="input-f2-label" oninput="updateConfig('f2L', this.value)" class="w-full text-xs p-2 border rounded outline-none" placeholder="按鈕名稱">
+                            <input type="text" id="input-f2-uri" oninput="updateConfig('f2U', this.value)" class="w-full text-[10px] p-2 border rounded font-mono outline-none" placeholder="連結 (https://...)">
+                        </div>
                     </div>
                 </div>
             </aside>
 
             <!-- 右側即時預覽 -->
             <section class="flex-1 chat-room-bg custom-scrollbar relative">
-                <div class="sticky top-0 w-full text-center py-4 pointer-events-none z-10">
-                    <span class="bg-black/20 backdrop-blur-md text-white text-[10px] px-4 py-1.5 rounded-full font-bold tracking-widest border border-white/10 shadow-lg">REAL-TIME PREVIEW</span>
-                </div>
-                
+                <div class="sticky top-0 w-full text-center py-4 z-10"><span class="bg-black/20 text-white text-[10px] px-4 py-1.5 rounded-full font-bold uppercase tracking-widest border border-white/10 shadow-lg">Live Preview</span></div>
                 <div class="flex items-start gap-2 w-full justify-center mt-4 mb-20">
-                    <!-- 模擬頭像 -->
-                    <div class="w-9 h-9 rounded-full bg-slate-400 shrink-0 shadow-sm border border-white/20"></div>
-                    
-                    <!-- 氣泡內容 -->
-                    <div class="flex-bubble-container bg-white rounded-2xl overflow-hidden flex flex-col">
-                        <!-- Hero 區 -->
+                    <div class="w-8 h-8 rounded-full bg-slate-400 shrink-0"></div>
+                    <div class="flex-bubble-container bg-white rounded-xl overflow-hidden flex flex-col shadow-2xl">
+                        <!-- Hero 預覽 -->
                         <div id="view-hero-container" class="relative w-full bg-black overflow-hidden shrink-0">
                             <img id="view-hero-img" src="" class="w-full h-full object-cover hidden">
                             <div id="view-video-ui" class="absolute inset-0 flex items-center justify-center hidden">
-                                <div class="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center shadow-2xl">
-                                    <svg style="fill: #111;" class="icon text-slate-900 ml-1"><use href="#icon-play"/></svg>
-                                </div>
+                                <div class="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg"><svg style="fill:#111" class="icon"><use href="#icon-play"/></svg></div>
                             </div>
                         </div>
-
-                        <!-- Body 區 -->
-                        <div class="p-4 bg-slate-50 border-b border-slate-100" id="view-body-container">
+                        <!-- Body 預覽 -->
+                        <div class="p-4 bg-slate-50 border-b" id="view-body-container">
                             <div class="grid gap-2" id="view-grid"></div>
                         </div>
-
-                        <!-- Footer 區 -->
-                        <div class="p-3 flex flex-col gap-2 shrink-0 bg-white">
+                        <!-- Footer 預覽 -->
+                        <div class="p-3 flex flex-col gap-2 shrink-0 bg-white" id="view-footer">
                             <div class="flex gap-2 w-full">
-                                <button id="view-btn-1" class="flex-1 py-2.5 rounded-lg text-[11px] font-bold text-white bg-slate-900 hover:opacity-90 transition shadow-sm"></button>
-                                <button id="view-btn-2" class="flex-1 py-2.5 rounded-lg text-[11px] font-bold text-white bg-slate-900 hover:opacity-90 transition shadow-sm"></button>
+                                <button id="view-btn-1" class="flex-1 py-2.5 rounded-lg text-[10px] font-bold text-white transition hover:opacity-90"></button>
+                                <button id="view-btn-2" class="flex-1 py-2.5 rounded-lg text-[10px] font-bold text-white transition hover:opacity-90"></button>
                             </div>
                         </div>
                     </div>
@@ -248,47 +257,59 @@
         </main>
     </div>
 
-    <!-- 提示框 -->
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-8 py-3.5 rounded-full shadow-2xl text-sm font-medium opacity-0 transition-all duration-300 pointer-events-none z-50 transform translate-y-4">
-        JSON 已成功複製至剪貼簿
-    </div>
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-8 py-3 rounded-full shadow-2xl opacity-0 transition-all pointer-events-none z-50">JSON 已複製到剪貼簿</div>
 
     <script>
-        // 模擬資料庫內容
-        const mockListData = {
-            product: [
-                { name: '2025 春季熱門選物', desc: '包含 6 項嚴選商品', date: '2025/01/15 14:00', status: '使用中' },
-                { name: '新年福袋組合', desc: '商品模組：4 項', date: '2025/01/10 09:30', status: '草稿' }
-            ],
-            single: [
-                { name: '加入好友自動回覆', desc: '單頁導引訊息', date: '2024/12/20 11:20', status: '使用中' }
-            ],
-            multi: [
-                { name: '週年慶輪播目錄', desc: '12 頁滾動卡片', date: '2025/01/12 18:45', status: '已排程' }
-            ]
-        };
-
-        // 編輯器狀態
+        // 核心資料狀態 (帶入您提供的範例網址)
         let state = {
-            hero: { type: 'image', aspectRatio: '16:9', url: "https://lihi.cc/5OXMZ" },
-            body: { columns: 3, items: [
-                { title: "經典商品 A", img: "https://lihi.cc/mwMvo" },
-                { title: "質感選物 B", img: "https://lihi.cc/2Nu8G" },
-                { title: "限時優惠 C", img: "https://lihi.cc/yRfpn" }
-            ]},
+            hero: { 
+                type: 'video', 
+                aspectRatio: '16:9', 
+                url: "https://lihi.cc/5OXMZ", 
+                videoUrl: "https://lihi.cc/YsmAp", 
+                link: "https://line.me" 
+            },
+            body: { 
+                columns: 3, 
+                tagBgColor: "#0D0D0D", 
+                tagTextColor: "#FFFFFF", 
+                items: [
+                    { title: "商品 A", img: "https://lihi.cc/mwMvo", url: "https://line.me" },
+                    { title: "商品 B", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+                    { title: "商品 C", img: "https://lihi.cc/yRfpn", url: "https://line.me" },
+                    { title: "商品 D", img: "https://lihi.cc/yRfpn", url: "https://line.me" },
+                    { title: "商品 E", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+                    { title: "商品 F", img: "https://lihi.cc/mwMvo", url: "https://line.me" }
+                ]
+            },
             footer: { 
-                btn1: { label: "前往官網" }, 
-                btn2: { label: "領取優惠" } 
+                btn1: { label: "品牌故事", color: "#000000", uri: "https://liff.line.me/2008704329-cTkwlRHm" }, 
+                btn2: { label: "好友分享", color: "#000000", uri: "line://nv/recommendOA/@754tjssx" } 
             }
         };
 
-        // 切換列表視圖與編輯器
+        let history = [];
+        function saveState() {
+            if (history.length > 20) history.shift();
+            history.push(JSON.parse(JSON.stringify(state)));
+            document.getElementById('btn-undo').disabled = false;
+        }
+
+        function undo() {
+            if (history.length > 0) {
+                state = history.pop();
+                if (history.length === 0) document.getElementById('btn-undo').disabled = true;
+                syncUI(); renderPreview();
+            }
+        }
+
+        // --- 視圖控制 ---
         function enterEditor() {
             document.getElementById('view-list').classList.add('hidden');
             document.getElementById('view-editor').classList.remove('hidden');
             document.getElementById('editor-actions').classList.remove('hidden');
-            syncUI();
-            renderPreview();
+            syncUI(); renderPreview();
         }
 
         function exitEditor() {
@@ -297,42 +318,36 @@
             document.getElementById('editor-actions').classList.add('hidden');
         }
 
-        function switchListTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            renderTable(tab);
-        }
-
-        function renderTable(tab) {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = mockListData[tab].map(item => `
-                <tr class="hover:bg-slate-50 transition cursor-default">
-                    <td class="font-bold text-slate-800">${item.name}</td>
-                    <td class="text-slate-500 text-xs">${item.desc}</td>
-                    <td class="text-slate-400 text-xs">${item.date}</td>
-                    <td><span class="px-2.5 py-1 rounded-full text-[10px] bg-green-100 text-green-700 font-bold">${item.status}</span></td>
-                    <td><button onclick="enterEditor()" class="text-blue-600 font-bold text-xs hover:underline">編輯模組</button></td>
-                </tr>
-            `).join('');
-        }
-
-        // 編輯器邏輯
-        function updateHeroType(type) {
-            state.hero.type = type;
-            syncUI();
-            renderPreview();
+        // --- 編輯功能邏輯 ---
+        function updateHeroType(type) { 
+            saveState(); state.hero.type = type; syncUI(); renderPreview(); 
         }
 
         function updateConfig(path, value) {
+            saveState();
             if(path === 'heroAspect') state.hero.aspectRatio = value;
             if(path === 'heroUrl') state.hero.url = value;
-            renderPreview();
+            if(path === 'videoUrl') state.hero.videoUrl = value;
+            if(path === 'columns') state.body.columns = value;
+            if(path === 'tagBgColor') state.body.tagBgColor = value.toUpperCase();
+            
+            // 按鈕 1
+            if(path === 'f1L') state.footer.btn1.label = value;
+            if(path === 'f1C') state.footer.btn1.color = value.toUpperCase();
+            if(path === 'f1U') state.footer.btn1.uri = value;
+            
+            // 按鈕 2
+            if(path === 'f2L') state.footer.btn2.label = value;
+            if(path === 'f2C') state.footer.btn2.color = value.toUpperCase();
+            if(path === 'f2U') state.footer.btn2.uri = value;
+            
+            syncUI(); renderPreview();
         }
 
         function addItem() {
-            state.body.items.push({ title: "新商品項目", img: "https://lihi.cc/mwMvo" });
-            syncUI();
-            renderPreview();
+            saveState();
+            state.body.items.push({ title: "新商品", img: "https://lihi.cc/mwMvo", url: "https://line.me" });
+            syncUI(); renderPreview();
         }
 
         function syncUI() {
@@ -343,79 +358,158 @@
             document.getElementById('btn-type-video').className = `flex-1 py-1.5 text-xs font-bold rounded-md transition ${state.hero.type==='video'?active:inactive}`;
             document.getElementById('btn-type-none').className = `flex-1 py-1.5 text-xs font-bold rounded-md transition ${state.hero.type==='none'?active:inactive}`;
             
+            const vField = document.getElementById('field-video-url');
+            const uLabel = document.getElementById('label-hero-url');
+            if (state.hero.type === 'video') { vField.classList.remove('hidden'); uLabel.innerText = "封面圖網址 (jpg/png)"; }
+            else { vField.classList.add('hidden'); uLabel.innerText = "圖片網址 (jpg/png)"; }
+
             document.getElementById('input-hero-url').value = state.hero.url;
-            document.getElementById('input-btn1').value = state.footer.btn1.label;
-            document.getElementById('input-btn2').value = state.footer.btn2.label;
+            document.getElementById('input-video-url').value = state.hero.videoUrl;
+            document.getElementById('hero-aspect').value = state.hero.aspectRatio;
+            document.getElementById('input-tag-bg-color').value = state.body.tagBgColor;
+            document.getElementById('text-tag-bg-color').value = state.body.tagBgColor;
+
+            // Footer 同步
+            document.getElementById('input-f1-label').value = state.footer.btn1.label;
+            document.getElementById('input-f1-uri').value = state.footer.btn1.uri;
+            document.getElementById('input-f1-color').value = state.footer.btn1.color;
+            document.getElementById('text-f1-color').innerText = state.footer.btn1.color;
+
+            document.getElementById('input-f2-label').value = state.footer.btn2.label;
+            document.getElementById('input-f2-uri').value = state.footer.btn2.uri;
+            document.getElementById('input-f2-color').value = state.footer.btn2.color;
+            document.getElementById('text-f2-color').innerText = state.footer.btn2.color;
 
             const container = document.getElementById('items-container');
             container.innerHTML = state.body.items.map((item, i) => `
-                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative shadow-sm group">
-                    <button onclick="state.body.items.splice(${i},1);syncUI();renderPreview();" class="absolute -top-2 -right-2 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 shadow-sm transition">
-                        <svg class="icon icon-xs"><use href="#icon-x"/></svg>
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative shadow-sm space-y-2">
+                    <button onclick="saveState();state.body.items.splice(${i},1);syncUI();renderPreview();" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition">
+                        <svg class="icon w-3 h-3"><use href="#icon-trash"/></svg>
                     </button>
-                    <input type="text" value="${item.title}" oninput="state.body.items[${i}].title=this.value;renderPreview();" class="w-full text-[11px] p-2 border border-slate-200 rounded-lg mb-2 focus:ring-1 focus:ring-line-green outline-none" placeholder="商品名稱">
-                    <input type="text" value="${item.img}" oninput="state.body.items[${i}].img=this.value;renderPreview();" class="w-full text-[10px] p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-line-green outline-none font-mono" placeholder="圖片連結">
+                    <div class="grid gap-2">
+                        <input type="text" value="${item.title}" oninput="state.body.items[${i}].title=this.value;renderPreview();" class="w-full text-xs p-1.5 border rounded outline-none" placeholder="名稱">
+                        <input type="text" value="${item.img}" oninput="state.body.items[${i}].img=this.value;renderPreview();" class="w-full text-[10px] p-1.5 border rounded outline-none" placeholder="圖片網址">
+                        <input type="text" value="${item.url}" oninput="state.body.items[${i}].url=this.value;renderPreview();" class="w-full text-[10px] p-1.5 border rounded outline-none" placeholder="連結">
+                    </div>
                 </div>
             `).join('');
         }
 
         function renderPreview() {
-            const heroCont = document.getElementById('view-hero-container');
-            const heroImg = document.getElementById('view-hero-img');
-            const videoUi = document.getElementById('view-video-ui');
-            const ratioMap = { '1:1': 'aspect-1-1', '16:9': 'aspect-16-9', '4:3': 'aspect-4-3' };
+            const hCont = document.getElementById('view-hero-container');
+            const hImg = document.getElementById('view-hero-img');
+            const vUi = document.getElementById('view-video-ui');
+            const ratioMap = { '1:1': 'aspect-1-1', '16:9': 'aspect-16-9', '4:3': 'aspect-4-3', '1.91:1': 'aspect-1_91-1' };
 
-            heroCont.className = `relative w-full bg-black overflow-hidden shrink-0 ${ratioMap[state.hero.aspectRatio]}`;
-            if(state.hero.type === 'none') heroCont.classList.add('hidden');
+            hCont.className = `relative w-full bg-black overflow-hidden shrink-0 ${ratioMap[state.hero.aspectRatio] || 'aspect-16-9'}`;
+            if(state.hero.type === 'none') hCont.classList.add('hidden');
             else {
-                heroCont.classList.remove('hidden');
-                if(state.hero.type === 'image') { heroImg.src = state.hero.url; heroImg.classList.remove('hidden'); videoUi.classList.add('hidden'); }
-                else { heroImg.classList.add('hidden'); videoUi.classList.remove('hidden'); }
+                hCont.classList.remove('hidden');
+                hImg.src = state.hero.url; hImg.classList.remove('hidden');
+                if(state.hero.type === 'video') vUi.classList.remove('hidden');
+                else vUi.classList.add('hidden');
             }
 
             const grid = document.getElementById('view-grid');
             grid.className = `grid gap-2 grid-cols-${state.body.columns}`;
             grid.innerHTML = state.body.items.map(item => `
-                <div class="bg-white rounded-lg p-1.5 shadow-sm flex flex-col border border-slate-100">
-                    <div class="aspect-square bg-slate-100 rounded-md overflow-hidden mb-1.5 border border-slate-200"><img src="${item.img}" class="w-full h-full object-cover"></div>
-                    <div class="text-[9px] bg-slate-800 text-white text-center py-1 rounded font-bold truncate tracking-tight">${item.title}</div>
+                <div class="bg-white rounded p-1 shadow-sm flex flex-col border border-slate-100">
+                    <div class="aspect-square bg-slate-100 rounded overflow-hidden mb-1"><img src="${item.img}" class="w-full h-full object-cover"></div>
+                    <div style="background-color:${state.body.tagBgColor}; color:${state.body.tagTextColor}" class="text-[8px] font-bold text-center py-0.5 rounded truncate tracking-tighter">${item.title}</div>
                 </div>
             `).join('');
 
-            document.getElementById('view-btn-1').innerText = state.footer.btn1.label;
-            document.getElementById('view-btn-2').innerText = state.footer.btn2.label;
+            const b1 = document.getElementById('view-btn-1');
+            const b2 = document.getElementById('view-btn-2');
+            b1.innerText = state.footer.btn1.label;
+            b1.style.backgroundColor = state.footer.btn1.color;
+            b2.innerText = state.footer.btn2.label;
+            b2.style.backgroundColor = state.footer.btn2.color;
         }
 
         function exportJSON() {
-            // 構建精簡的 Flex JSON 格式
+            const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
+            const width = state.body.columns === 3 ? "32%" : "23%";
+            
+            let heroJson = undefined;
+            if (state.hero.type === 'image') {
+                heroJson = { "type": "image", "url": state.hero.url, "size": "full", "aspectRatio": state.hero.aspectRatio, "aspectMode": "cover" };
+            } else if (state.hero.type === 'video') {
+                heroJson = { 
+                    "type": "video", 
+                    "url": state.hero.videoUrl, 
+                    "previewUrl": state.hero.url, 
+                    "altContent": { "type": "image", "size": "full", "aspectRatio": state.hero.aspectRatio, "aspectMode": "cover", "url": state.hero.url }, 
+                    "aspectRatio": state.hero.aspectRatio 
+                };
+            }
+
             const flex = {
-                type: "bubble",
-                hero: state.hero.type !== 'none' ? { type: "image", url: state.hero.url, size: "full", aspectRatio: state.hero.aspectRatio, aspectMode: "cover" } : undefined,
-                body: {
-                    type: "box", layout: "vertical", contents: [{
-                        type: "box", layout: "vertical", spacing: "sm", contents: state.body.items.map(i => ({ type: "text", text: i.title }))
-                    }]
+                "type": "bubble",
+                "size": "mega",
+                "hero": heroJson,
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "md",
+                    "contents": chunk(state.body.items, state.body.columns).map(row => ({
+                        "type": "box",
+                        "layout": "horizontal",
+                        "spacing": "sm",
+                        "contents": row.map(item => ({
+                            "type": "box",
+                            "layout": "vertical",
+                            "width": width,
+                            "spacing": "xs",
+                            "action": { "type": "uri", "uri": item.url },
+                            "contents": [
+                                { "type": "image", "url": item.img, "aspectRatio": "1:1", "aspectMode": "cover", "size": "full" },
+                                { "type": "box", "layout": "vertical", "backgroundColor": state.body.tagBgColor, "cornerRadius": "sm", "paddingAll": "xs", "contents": [{ "type": "text", "text": item.title, "color": state.body.tagTextColor, "size": "xxs", "align": "center", "weight": "bold", "wrap": true }] }
+                            ]
+                        }))
+                    }))
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "spacing": "sm",
+                    "contents": [
+                        { "type": "button", "style": "primary", "color": state.footer.btn1.color, "height": "sm", "action": { "type": "uri", "label": state.footer.btn1.label, "uri": state.footer.btn1.uri } },
+                        { "type": "button", "style": "primary", "color": state.footer.btn2.color, "height": "sm", "action": { "type": "uri", "label": state.footer.btn2.label, "uri": state.footer.btn2.uri } }
+                    ]
                 }
             };
+
             const el = document.createElement('textarea');
             el.value = JSON.stringify(flex, null, 2); 
-            document.body.appendChild(el); 
-            el.select(); 
-            document.execCommand('copy'); 
-            document.body.removeChild(el);
-            
+            document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
             const toast = document.getElementById('toast');
-            toast.style.opacity = '1'; 
-            toast.classList.remove('translate-y-4');
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.classList.add('translate-y-4');
-            }, 2500);
+            toast.style.opacity = '1'; setTimeout(() => toast.style.opacity = '0', 2500);
         }
 
-        window.onload = () => {
-            switchListTab('product');
+        function switchListTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            const tbody = document.getElementById('table-body');
+            const data = mockListData[tab] || [];
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="font-bold text-slate-800">${item.name}</td>
+                    <td class="text-slate-500 text-xs">${item.desc}</td>
+                    <td class="text-slate-400 text-xs">${item.date}</td>
+                    <td><span class="px-2.5 py-1 rounded-full text-[10px] bg-green-100 text-green-700 font-bold">${item.status}</span></td>
+                    <td><button onclick="enterEditor()" class="text-blue-600 font-bold text-xs hover:underline">編輯</button></td>
+                </tr>
+            `).join('');
+        }
+
+        const mockListData = {
+            product: [{ name: '商品展示模組', desc: '商品：6 項', date: '2025/01/18', status: '使用中' }],
+            single: [{ name: '活動公告', desc: '單頁', date: '2025/01/10', status: '草稿' }],
+            multi: [{ name: '精選輪播', desc: '輪播', date: '2025/01/12', status: '已發佈' }]
         };
+
+        window.onload = () => switchListTab('product');
     </script>
 </body>
 </html>
