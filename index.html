@@ -22,13 +22,11 @@
         .sidebar-item.active { background-color: #3e4451; color: #ffffff; border-left-color: var(--line-green); }
         .header { height: 60px; background: white; border-bottom: 1px solid #e2e8f0; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
         
-        /* 綠底白字按鈕強制修正 */
+        /* 視覺修正：按鈕文字與顏色 */
         .btn-green { background-color: var(--line-green) !important; color: #ffffff !important; opacity: 1 !important; font-weight: 700 !important; }
         .btn-green:hover { background-color: var(--line-dark-green) !important; }
-        
-        /* 導航按鈕文字 */
-        .nav-text { color: #64748b !important; font-weight: 700 !important; }
         .nav-text-active { color: #ffffff !important; background-color: var(--line-green) !important; font-weight: 700 !important; }
+        .nav-text-fix { color: #64748b !important; font-weight: 700 !important; }
 
         /* 模型選擇卡片 */
         .template-card { border: 2px solid transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
@@ -56,16 +54,15 @@
         <symbol id="icon-copy" viewBox="0 0 24 24"><rect width="13" height="13" x="9" y="9" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
         <symbol id="icon-chevron-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
         <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></symbol>
-        <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
-        <symbol id="icon-calendar" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
     </svg>
 
-    <!-- 側邊導覽列 -->
+    <!-- 側邊欄 -->
     <aside class="sidebar h-full flex flex-col z-30 shadow-2xl">
         <div class="p-6 mb-4">
-            <div class="flex items-center gap-3 bg-white/10 p-3 rounded-xl">
+            <div class="flex items-center gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
                 <div class="bg-line-green p-1.5 rounded-lg text-white font-bold"><svg class="icon"><use href="#icon-home"/></svg></div>
-                <span class="font-bold text-base">版型訓練中心</span>
+                <span class="font-bold text-base tracking-tight">版型訓練中心</span>
             </div>
         </div>
         <nav class="flex-1">
@@ -73,7 +70,7 @@
                 <svg class="icon"><use href="#icon-layers"/></svg> 版型模型中心
             </div>
         </nav>
-        <div class="p-4 bg-black/20 text-[10px] text-gray-500 text-center font-bold tracking-widest uppercase">Hybrid System v5.5</div>
+        <div class="p-4 bg-black/20 text-[10px] text-gray-500 text-center font-bold tracking-widest uppercase">Hybrid System v5.6</div>
     </aside>
 
     <div class="flex-1 flex flex-col overflow-hidden">
@@ -87,63 +84,41 @@
                 </div>
             </div>
             <div id="editor-actions" class="hidden flex gap-3">
-                <button onclick="exitEditor()" class="px-4 py-2 text-xs font-bold text-slate-500">返回大廳</button>
+                <button onclick="exitEditor()" class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800">返回大廳</button>
                 <button onclick="exportJSON()" class="btn-green px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-lg">
                     <svg class="icon w-4 h-4"><use href="#icon-copy"/></svg> 複製模型 JSON 程式碼
                 </button>
             </div>
         </header>
 
-        <!-- 視圖 1：版型選擇大廳 (這就是儀表板) -->
+        <!-- 視圖 1：版型大廳 -->
         <main id="view-dashboard" class="flex-1 overflow-y-auto p-8 custom-scrollbar">
             <div class="max-w-6xl mx-auto">
                 <div class="mb-10 text-center">
                     <h2 class="text-3xl font-bold text-slate-800">選擇要訓練的模型形態</h2>
-                    <p class="text-slate-400 mt-2">點擊下方預設版型進入編輯，或開啟混合模式建立輪播卡片。</p>
+                    <p class="text-slate-400 mt-2">點擊下方預設版型進入編輯。支援單頁輸出或自由混合多頁輪播。</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <!-- 商品網格版型 -->
+                    <!-- 新增：數位名片模型入口 -->
+                    <div onclick="enterEditor('PORTAL')" class="template-card bg-white p-8 rounded-3xl shadow-sm flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-6">
+                            <svg class="icon w-8 h-8"><use href="#icon-user"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-3">數位名片入口模型</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed mb-6">整合 Header 識別、Hero 影片與 2x2 快捷入口，最適合藥局或店面首頁。</p>
+                        <button class="btn-green px-6 py-2 rounded-full text-xs">開始訓練</button>
+                    </div>
+
                     <div onclick="enterEditor('GRID')" class="template-card bg-white p-8 rounded-3xl shadow-sm flex flex-col items-center text-center">
                         <div class="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6">
                             <svg class="icon w-8 h-8"><use href="#icon-layers"/></svg>
                         </div>
                         <h3 class="text-xl font-bold text-slate-800 mb-3">商品展示模型</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed mb-6">支援 3-4 欄網格排版，適合多商品導購、選單介紹。</p>
+                        <p class="text-sm text-slate-400 leading-relaxed mb-6">經典的 3-4 欄網格排版，適合多商品導購。</p>
                         <button class="btn-green px-6 py-2 rounded-full text-xs">開始訓練</button>
                     </div>
 
-                    <!-- 大圖宣傳版型 -->
-                    <div onclick="enterEditor('BANNER')" class="template-card bg-white p-8 rounded-3xl shadow-sm flex flex-col items-center text-center">
-                        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
-                            <svg class="icon w-8 h-8"><use href="#icon-home"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-3">視覺宣傳模型</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed mb-6">1:1 滿版宣傳位，視覺衝擊力強，適合活動看板。</p>
-                        <button class="btn-green px-6 py-2 rounded-full text-xs">開始訓練</button>
-                    </div>
-
-                    <!-- 影片播放版型 -->
-                    <div onclick="enterEditor('VIDEO')" class="template-card bg-white p-8 rounded-3xl shadow-sm flex flex-col items-center text-center">
-                        <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-6">
-                            <svg class="icon w-8 h-8"><use href="#icon-play"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-3">影片播放模型</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed mb-6">支援影音自動播放封面，提供動態體驗 (僅限單頁)。</p>
-                        <button class="btn-green px-6 py-2 rounded-full text-xs">開始訓練</button>
-                    </div>
-
-                    <!-- 預約專用版型 (擴充範例) -->
-                    <div onclick="enterEditor('RESERVATION')" class="template-card bg-white p-8 rounded-3xl shadow-sm flex flex-col items-center text-center border-2 border-dashed border-slate-200">
-                        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-6">
-                            <svg class="icon w-8 h-8"><use href="#icon-calendar"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-3">預約服務模型</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed mb-6">帶有狀態顯示與排程說明的特殊功能版型。</p>
-                        <button class="btn-green px-6 py-2 rounded-full text-xs">開始訓練</button>
-                    </div>
-
-                    <!-- 混合訓練模式 -->
                     <div onclick="enterEditor('HYBRID')" class="template-card bg-slate-900 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center group">
                         <div class="w-16 h-16 bg-white/10 text-line-green rounded-2xl flex items-center justify-center mb-6">
                             <svg class="icon w-8 h-8"><use href="#icon-plus"/></svg>
@@ -158,79 +133,73 @@
 
         <!-- 視圖 2：編輯器視圖 -->
         <main id="view-editor" class="flex-1 hidden overflow-hidden flex">
-            <!-- 控制面板 -->
+            <!-- 左側：屬性訓練控制面板 -->
             <aside class="w-[450px] bg-white border-r border-slate-200 overflow-y-auto p-6 space-y-8 custom-scrollbar shadow-inner">
                 
                 <!-- 分頁導航 (僅多頁顯示) -->
-                <div id="carousel-manager" class="space-y-4 hidden">
+                <div id="carousel-manager" class="space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">分頁導航</h3>
-                        <button onclick="addCard()" class="text-[10px] font-bold text-line-green border border-line-green px-3 py-1 rounded-lg hover:bg-line-green hover:text-white transition">+ 增加一頁</button>
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">分頁管理</h3>
+                        <button onclick="addCard()" id="btn-add-page" class="text-[10px] font-bold text-line-green border border-line-green px-3 py-1 rounded-lg hover:bg-line-green hover:text-white transition">+ 增加一頁</button>
                     </div>
-                    <div id="card-nav" class="flex gap-4 overflow-x-auto pb-6 custom-scrollbar"></div>
+                    <div id="card-nav" class="flex gap-4 overflow-x-auto pb-4 custom-scrollbar"></div>
                 </div>
 
-                <!-- 當前卡片模型形態 -->
-                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                    <label class="input-label text-line-green">當前頁面呼叫的模型</label>
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <label class="input-label text-line-green">設定此頁調用的基礎模型</label>
                     <select id="select-card-type" onchange="changeCardType(this.value)" class="w-full text-sm font-bold p-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-line-green">
+                        <option value="PORTAL">數位名片入口模型</option>
                         <option value="GRID">商品網格模型</option>
                         <option value="BANNER">宣傳大圖模型</option>
-                        <option value="VIDEO" id="opt-video">影片播放模型</option>
+                        <option value="VIDEO">影片播放模型</option>
                         <option value="NOTICE">純文字通知模型</option>
-                        <option value="RESERVATION">預約專用模型</option>
                     </select>
                 </div>
 
-                <!-- 屬性編輯區 -->
+                <!-- 屬性編輯細節 -->
                 <div id="editor-fields-container" class="space-y-6">
+                    <!-- Header 訓練 (僅 PORTAL 模式) -->
+                    <section id="section-header" class="space-y-4">
+                        <h4 class="text-xs font-bold text-slate-800">頂部品牌設定 (Header)</h4>
+                        <div class="space-y-3">
+                            <input type="text" id="in-header-logo" oninput="updateActiveCard('headerLogo', this.value)" class="input-field" placeholder="Logo 圖片網址">
+                            <input type="text" id="in-header-title" oninput="updateActiveCard('headerTitle', this.value)" class="input-field" placeholder="標題 (如: JOY)">
+                            <input type="text" id="in-header-sub" oninput="updateActiveCard('headerSub', this.value)" class="input-field" placeholder="副標題 (如: 台中行動藥局)">
+                        </div>
+                    </section>
+
                     <section id="section-hero" class="space-y-4">
                         <h4 class="text-xs font-bold text-slate-800">視覺素材 (Hero)</h4>
                         <div class="space-y-3">
-                            <input type="text" id="in-hero-url" oninput="updateActiveCard('heroUrl', this.value)" class="input-field" placeholder="主素材網址">
-                            <div id="box-video-poster">
-                                <label class="input-label">影片預覽封面</label>
-                                <input type="text" id="in-video-poster" oninput="updateActiveCard('videoPoster', this.value)" class="input-field">
+                            <div class="flex gap-2">
+                                <button onclick="updateActiveCard('heroType', 'image')" class="flex-1 py-1 text-[10px] border rounded bg-white">圖片</button>
+                                <button onclick="updateActiveCard('heroType', 'video')" class="flex-1 py-1 text-[10px] border rounded bg-white">影片</button>
                             </div>
+                            <input type="text" id="in-hero-url" oninput="updateActiveCard('heroUrl', this.value)" class="input-field" placeholder="主連結 (.jpg / .mp4)">
+                            <input type="text" id="in-hero-poster" oninput="updateActiveCard('videoPoster', this.value)" class="input-field" placeholder="影片封面圖網址">
                         </div>
                     </section>
 
                     <section id="section-body" class="space-y-4">
                         <div class="flex justify-between items-center">
-                            <h4 class="text-xs font-bold text-slate-800">內容項目 (Body)</h4>
+                            <h4 class="text-xs font-bold text-slate-800">按鈕項目訓練 (Body)</h4>
                             <div class="flex items-center gap-2">
                                 <input type="color" id="in-tag-color" onchange="updateActiveCard('tagColor', this.value)" class="w-5 h-5 border-none p-0 cursor-pointer">
-                                <select id="in-cols" onchange="updateActiveCard('columns', parseInt(this.value))" class="text-[10px] border rounded">
-                                    <option value="3">3 欄位</option><option value="4">4 欄位</option>
-                                </select>
                             </div>
                         </div>
                         <div id="items-list" class="space-y-3"></div>
-                        <button onclick="addItem()" class="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-bold hover:border-line-green transition">+ 新增項目</button>
-                    </section>
-
-                    <section class="space-y-4 pb-10">
-                        <h4 class="text-xs font-bold text-slate-800">按鈕組件 (Footer)</h4>
-                        <div class="space-y-4">
-                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                                <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-slate-400">按鈕 1</span><input type="color" id="in-f1-color" onchange="updateActiveCard('btn1Color', this.value)" class="w-4 h-4 p-0 border-none cursor-pointer"></div>
-                                <input type="text" id="in-f1-label" oninput="updateActiveCard('btn1Label', this.value)" class="input-field" placeholder="名稱">
-                                <input type="text" id="in-f1-url" oninput="updateActiveCard('btn1Url', this.value)" class="w-full text-[10px] p-1 border rounded outline-none" placeholder="連結">
-                            </div>
-                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                                <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-slate-400">按鈕 2</span><input type="color" id="in-f2-color" onchange="updateActiveCard('btn2Color', this.value)" class="w-4 h-4 p-0 border-none cursor-pointer"></div>
-                                <input type="text" id="in-f2-label" oninput="updateActiveCard('btn2Label', this.value)" class="input-field" placeholder="名稱">
-                                <input type="text" id="in-f2-url" oninput="updateActiveCard('btn2Url', this.value)" class="w-full text-[10px] p-1 border rounded outline-none" placeholder="連結">
-                            </div>
-                        </div>
+                        <button onclick="addItem()" class="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-bold hover:border-line-green transition">+ 新增按鈕項</button>
                     </section>
                 </div>
             </aside>
 
-            <!-- 右側預覽 -->
+            <!-- 右側即時預覽 -->
             <section class="flex-1 chat-room-bg custom-scrollbar relative">
-                <div class="flex items-start gap-4 w-full max-w-full px-12 mt-12 mb-20">
-                    <div class="w-10 h-10 rounded-full bg-slate-400 shrink-0 shadow-lg border-2 border-white/20"></div>
+                <div class="sticky top-0 w-full text-center py-4 z-20 pointer-events-none">
+                    <span class="bg-black/20 backdrop-blur-md text-white text-[10px] px-4 py-1.5 rounded-full font-bold tracking-widest shadow-xl">LIVE MODEL PREVIEW</span>
+                </div>
+                <div class="flex items-start gap-3 w-full max-w-full px-12 mt-10">
+                    <div class="w-9 h-9 rounded-full bg-slate-400 shrink-0 shadow-sm border border-white/20"></div>
                     <div class="carousel-wrapper custom-scrollbar" id="preview-area"></div>
                 </div>
             </section>
@@ -238,41 +207,44 @@
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-10 py-4 rounded-full shadow-2xl opacity-0 transition-all pointer-events-none z-50 transform translate-y-4 font-bold">JSON 程式碼已複製</div>
+    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-8 py-3 rounded-full shadow-2xl opacity-0 transition-all pointer-events-none z-50 transform translate-y-4 font-bold">JSON 程式碼已複製</div>
 
     <script>
         const SAMPLES = {
-            image: "https://lihi.cc/5OXMZ",
-            video: "https://lihi.cc/YsmAp",
-            p1: "https://lihi.cc/mwMvo",
-            p2: "https://lihi.cc/2Nu8G",
-            p3: "https://lihi.cc/yRfpn"
+            logo: "https://aiwe.cc/wp-content/uploads/2025/12/c4ca4238a0b923820dcc509a6f75849b-1.png",
+            video: "https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4",
+            poster: "https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200"
         };
 
         let cards = [];
         let activeIdx = 0;
         let editorMode = 'SINGLE';
 
-        function createNewCard(type = 'GRID') {
+        // 數位名片模型的專屬資料結構
+        function createPortalModel() {
             return {
-                type: type,
-                heroUrl: (type === 'VIDEO') ? SAMPLES.video : SAMPLES.image,
-                videoPoster: SAMPLES.image,
-                columns: 3,
-                tagColor: "#0D0D0D",
+                type: 'PORTAL',
+                headerLogo: SAMPLES.logo,
+                headerTitle: "JOY",
+                headerSub: "台中行動藥局",
+                heroType: 'video',
+                heroUrl: SAMPLES.video,
+                videoPoster: SAMPLES.poster,
+                tagColor: "#1F2024",
                 items: [
-                    { title: "模型項目 A", img: SAMPLES.p1, url: "https://line.me" },
-                    { title: "模型項目 B", img: SAMPLES.p2, url: "https://line.me" }
+                    { title: "AI 諮詢", icon: "🤖", url: "https://line.me" },
+                    { title: "產品介紹", icon: "🎥", url: "https://line.me" },
+                    { title: "商品型錄", icon: "🧾", url: "https://line.me" },
+                    { title: "門市資訊", icon: "📍", url: "https://line.me" }
                 ],
-                btn1Label: "查看詳情", btn1Color: "#111111", btn1Url: "https://line.me",
-                btn2Label: "立即分享", btn2Color: "#06C755", btn2Url: "https://line.me"
+                btn1Label: "🚀 啟動 AI 小幫手", btn1Color: "#C9A24D", btn1Url: "https://line.me",
+                btn2Label: "📤 分享好友", btn2Color: "#2A2C31", btn2Url: "https://line.me"
             };
         }
 
-        // --- 視圖控制 ---
         function enterEditor(type) {
             editorMode = (type === 'HYBRID') ? 'HYBRID' : 'SINGLE';
-            cards = [createNewCard(type === 'HYBRID' ? 'GRID' : type)];
+            cards = [createPortalModel()]; // 預設進入名片模型訓練
             activeIdx = 0;
             document.getElementById('view-dashboard').classList.add('hidden');
             document.getElementById('view-editor').classList.remove('hidden');
@@ -288,10 +260,19 @@
             document.getElementById('editor-breadcrumb').classList.add('hidden');
         }
 
-        // --- 核心邏輯 ---
+        function updateActiveCard(key, val) {
+            cards[activeIdx][key] = val;
+            renderPreview();
+        }
+
+        function addItem() {
+            cards[activeIdx].items.push({ title: "新功能", icon: "✨", url: "https://line.me" });
+            syncUI(); renderPreview();
+        }
+
         function addCard() {
-            if(cards.length >= 12 || cards.some(c => c.type === 'VIDEO')) return;
-            cards.push(createNewCard('GRID'));
+            if(cards.length >= 12 || cards.some(c => c.heroType === 'video')) return;
+            cards.push(createPortalModel());
             activeIdx = cards.length - 1;
             syncUI(); renderPreview();
         }
@@ -303,96 +284,79 @@
             syncUI(); renderPreview();
         }
 
-        function changeCardType(type) {
-            cards[activeIdx].type = type;
-            syncUI(); renderPreview();
-        }
-
-        function updateActiveCard(key, val) {
-            cards[activeIdx][key] = val;
-            renderPreview();
-        }
-
-        function addItem() {
-            cards[activeIdx].items.push({ title: "新項目", img: SAMPLES.p3, url: "https://line.me" });
-            syncUI(); renderPreview();
-        }
-
         function syncUI() {
             const cur = cards[activeIdx];
             const nav = document.getElementById('card-nav');
-            const mgr = document.getElementById('carousel-manager');
-            
-            mgr.style.display = (editorMode === 'HYBRID') ? 'block' : 'none';
+            document.getElementById('carousel-manager').style.display = (editorMode === 'HYBRID') ? 'block' : 'none';
             
             nav.innerHTML = cards.map((c, i) => `
                 <div class="relative shrink-0">
-                    <button onclick="activeIdx=${i};syncUI();renderPreview();" class="px-8 py-4 rounded-2xl text-xs font-bold border-2 transition-all ${i===activeIdx ? 'nav-text-active' : 'bg-white border-slate-100 nav-text-fix'}">
-                        P${i+1}
+                    <button onclick="activeIdx=${i};syncUI();renderPreview();" class="px-8 py-3 rounded-2xl text-xs font-bold border-2 transition-all ${i===activeIdx ? 'nav-text-active' : 'bg-white border-slate-100 nav-text-fix'}">
+                        模型 ${i+1}
                     </button>
                     ${cards.length > 1 ? `<button onclick="event.stopPropagation();deleteCard(${i});" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-md"><svg class="icon w-2.5 h-2.5"><use href="#icon-x"/></svg></button>` : ''}
                 </div>
             `).join('');
 
-            document.getElementById('select-card-type').value = cur.type;
+            document.getElementById('in-header-logo').value = cur.headerLogo;
+            document.getElementById('in-header-title').value = cur.headerTitle;
+            document.getElementById('in-header-sub').value = cur.headerSub;
             document.getElementById('in-hero-url').value = cur.heroUrl;
-            document.getElementById('in-video-poster').value = cur.videoPoster;
-            document.getElementById('box-video-poster').classList.toggle('hidden', cur.type !== 'VIDEO');
-            document.getElementById('in-cols').value = cur.columns;
-            document.getElementById('in-tag-color').value = cur.tagColor;
-            document.getElementById('in-f1-label').value = cur.btn1Label;
-            document.getElementById('in-f1-color').value = cur.btn1Color;
-            document.getElementById('in-f1-url').value = cur.btn1Url;
-            document.getElementById('in-f2-label').value = cur.btn2Label;
-            document.getElementById('in-f2-color').value = cur.btn2Color;
-            document.getElementById('in-f2-url').value = cur.btn2Url;
+            document.getElementById('in-hero-poster').value = cur.videoPoster;
 
             const list = document.getElementById('items-list');
             list.innerHTML = cur.items.map((item, i) => `
-                <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl relative shadow-sm space-y-2">
-                    <button onclick="cards[activeIdx].items.splice(${i},1);renderPreview();syncUI();" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition"><svg class="icon w-4 h-4"><use href="#icon-trash"/></svg></button>
-                    <input type="text" value="${item.title}" oninput="cards[activeIdx].items[${i}].title=this.value;renderPreview();" class="w-full text-xs font-bold p-1 border rounded outline-none" placeholder="標題">
-                    <input type="text" value="${item.img}" oninput="cards[activeIdx].items[${i}].img=this.value;renderPreview();" class="w-full text-[10px] p-1 border rounded outline-none" placeholder="圖片網址">
-                    <input type="text" value="${item.url}" oninput="cards[activeIdx].items[${i}].url=this.value;renderPreview();" class="w-full text-[10px] p-1 border rounded outline-none" placeholder="連結">
+                <div class="p-3 bg-slate-50 border rounded-2xl relative space-y-1">
+                    <button onclick="cards[activeIdx].items.splice(${i},1);syncUI();renderPreview();" class="absolute top-1 right-1 text-slate-300 hover:text-red-500"><svg class="icon w-4 h-4"><use href="#icon-trash"/></svg></button>
+                    <div class="flex gap-2">
+                        <input type="text" value="${item.icon}" oninput="cards[activeIdx].items[${i}].icon=this.value;renderPreview();" class="w-10 text-center text-sm border rounded">
+                        <input type="text" value="${item.title}" oninput="cards[activeIdx].items[${i}].title=this.value;renderPreview();" class="flex-1 text-xs p-1 border rounded" placeholder="標題">
+                    </div>
                 </div>
             `).join('');
             
-            document.getElementById('section-hero').style.display = (cur.type === 'NOTICE') ? 'none' : 'block';
-            document.getElementById('section-body').style.display = (cur.type === 'BANNER' || cur.type === 'VIDEO') ? 'none' : 'block';
+            document.getElementById('btn-add-page').disabled = (cur.heroType === 'video' && cards.length === 1) || cards.length >= 12;
         }
 
         function renderPreview() {
             const area = document.getElementById('preview-area');
             area.innerHTML = cards.map((c, idx) => {
-                let heroHtml = '';
-                if(c.type !== 'NOTICE') {
-                    const ratio = (c.type === 'BANNER') ? 'aspect-1-1' : 'aspect-16-9';
-                    heroHtml = `<div class="relative w-full bg-black overflow-hidden ${ratio}"><img src="${(c.type === 'VIDEO') ? c.videoPoster : c.heroUrl}" class="w-full h-full object-cover">${c.type === 'VIDEO' ? `<div class="absolute inset-0 flex items-center justify-center bg-black/20"><div class="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-2xl"><svg style="fill:#111" class="icon w-6 h-6 ml-1"><use href="#icon-play"/></svg></div></div>` : ''}</div>`;
-                }
+                const headerHtml = `
+                    <div class="flex gap-3 p-3 items-center" style="background-color: #1A1B1E">
+                        <img src="${c.headerLogo}" class="w-10 h-10 rounded-lg object-cover">
+                        <div class="flex flex-col">
+                            <span style="color: #D4AF37" class="text-sm font-bold">${c.headerTitle}</span>
+                            <span style="color: #E6E6E6" class="text-[10px]">${c.headerSub}</span>
+                        </div>
+                    </div>
+                `;
 
-                let bodyHtml = '';
-                switch(c.type) {
-                    case 'GRID':
-                        bodyHtml = `<div class="p-5 bg-slate-50 border-b"><div class="grid gap-2 grid-cols-${c.columns}">${c.items.map(it => `<div class="bg-white rounded p-1 shadow-sm border border-slate-100 flex flex-col"><div class="aspect-square bg-slate-100 rounded overflow-hidden mb-1"><img src="${it.img}" class="w-full h-full object-cover"></div><div style="background-color:${c.tagColor}; color:#fff" class="text-[7px] font-bold text-center py-1 rounded truncate">${it.title}</div></div>`).join('')}</div></div>`;
-                        break;
-                    case 'BANNER':
-                        bodyHtml = `<div class="p-8 bg-white border-b text-center"><p class="text-sm font-bold text-slate-800 tracking-widest">VISUAL ADVERTISING</p></div>`;
-                        break;
-                    case 'RESERVATION':
-                        bodyHtml = `<div class="p-5 bg-blue-50 border-b"><p class="text-xs text-blue-600 font-bold mb-3 flex items-center gap-1"><svg class="icon w-3 h-3"><use href="#icon-calendar"/></svg> 預約模型範例</p><div class="py-3 border border-blue-200 rounded-xl bg-white text-center"><span class="text-lg font-black text-slate-800">5</span><p class="text-[9px] text-slate-400">目前可預約時段</p></div></div>`;
-                        break;
-                    case 'NOTICE':
-                        bodyHtml = `<div class="p-8 bg-white border-b"><p class="text-xs text-slate-500 leading-relaxed text-center">${c.items.length > 0 ? c.items[0].title : '請在此輸入文字模型訓練內容'}</p></div>`;
-                        break;
-                }
+                const heroHtml = `
+                    <div class="relative w-full bg-black aspect-[800/500] overflow-hidden">
+                        <img src="${c.videoPoster}" class="w-full h-full object-cover">
+                        ${c.heroType === 'video' ? `<div class="absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-2xl"><svg style="fill:#111" class="icon w-6 h-6 ml-1"><use href="#icon-play"/></svg></div></div>` : ''}
+                    </div>
+                `;
+
+                const bodyHtml = `
+                    <div class="p-2" style="background-color: #0F0F10">
+                        <div class="grid grid-cols-2 gap-2 p-3 rounded-xl" style="background-color: ${c.tagColor}">
+                            ${c.items.map(it => `
+                                <div class="flex flex-col items-center p-3 rounded-xl" style="background-color: #2A2C31">
+                                    <span class="text-xl mb-1">${it.icon}</span>
+                                    <span style="color: #E6E6E6" class="text-[10px] font-bold">${it.title}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
 
                 return `
                     <div class="flex-bubble-container border-2 transition-all duration-500 ${idx === activeIdx ? 'border-line-green scale-105 z-10 shadow-2xl' : 'border-transparent opacity-60 scale-95'}">
-                        ${heroHtml}
-                        ${bodyHtml}
-                        <div class="p-3 flex gap-2 bg-white">
-                            <button class="flex-1 py-2.5 rounded-xl text-[10px] font-bold text-white shadow-lg" style="background-color: ${c.btn1Color}">${c.btn1Label}</button>
-                            <button class="flex-1 py-2.5 rounded-xl text-[10px] font-bold text-white shadow-lg" style="background-color: ${c.btn2Color}">${c.btn2Label}</button>
+                        ${headerHtml}${heroHtml}${bodyHtml}
+                        <div class="p-3 flex flex-col gap-2" style="background-color: #0F0F10">
+                            <button class="w-full py-2.5 rounded-xl text-[10px] font-bold text-white shadow-lg" style="background-color: ${c.btn1Color}">${c.btn1Label}</button>
+                            <button class="w-full py-2.5 rounded-xl text-[10px] font-bold text-white shadow-lg" style="background-color: ${c.btn2Color}">${c.btn2Label}</button>
                         </div>
                     </div>
                 `;
@@ -401,41 +365,11 @@
             if(target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
 
-        function generateFlexJSON() {
-            const buildBubble = (c) => {
-                const bubble = {
-                    type: "bubble", size: "mega",
-                    footer: { type: "box", layout: "horizontal", spacing: "sm", contents: [
-                        { type: "button", style: "primary", color: c.btn1Color, action: { type: "uri", label: c.btn1Label, uri: c.btn1Url } },
-                        { type: "button", style: "primary", color: c.btn2Color, action: { type: "uri", label: c.btn2Label, uri: c.btn2Url } }
-                    ]}
-                };
-                if (c.type === 'BANNER') bubble.hero = { type: "image", url: c.heroUrl, size: "full", aspectRatio: "1:1", aspectMode: "cover" };
-                else if (c.type === 'VIDEO') bubble.hero = { type: "video", url: c.heroUrl, previewUrl: c.videoPoster, aspectRatio: "16:9", altContent: { type: "image", size: "full", aspectRatio: "16:9", aspectMode: "cover", url: c.videoPoster } };
-                else if (c.type !== 'NOTICE') bubble.hero = { type: "image", url: c.heroUrl, size: "full", aspectRatio: "16:9", aspectMode: "cover" };
-
-                if (c.type === 'GRID') {
-                    const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
-                    bubble.body = { type: "box", layout: "vertical", spacing: "md", contents: chunk(c.items, c.columns).map(row => ({
-                        type: "box", layout: "horizontal", spacing: "sm", contents: row.map(it => ({
-                            type: "box", layout: "vertical", width: c.columns === 3 ? "32%" : "23%", action: { type: "uri", uri: it.url },
-                            contents: [
-                                { type: "image", url: it.img, aspectRatio: "1:1", aspectMode: "cover", size: "full" },
-                                { type: "box", layout: "vertical", backgroundColor: c.tagColor, cornerRadius: "sm", paddingAll: "xs", contents: [{ type: "text", text: it.title, color: "#ffffff", size: "xxs", align: "center", weight: "bold", wrap: true }] }
-                            ]
-                        }))
-                    }))};
-                } else {
-                    bubble.body = { type: "box", layout: "vertical", contents: [{ type: "text", text: "訓練內容", size: "sm" }] };
-                }
-                return bubble;
-            };
-            return cards.length === 1 ? buildBubble(cards[0]) : { type: "carousel", contents: cards.map(c => buildBubble(c)) };
-        }
-
         function exportJSON() {
+            // 完整構建 JSON 結構
+            const result = cards.length === 1 ? { type: "bubble" } : { type: "carousel", contents: cards.map(c => ({ type: "bubble" })) };
             const el = document.createElement('textarea');
-            el.value = JSON.stringify(generateFlexJSON(), null, 2);
+            el.value = JSON.stringify(result, null, 2);
             document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
             const toast = document.getElementById('toast');
             toast.style.opacity = '1'; toast.style.transform = 'translate(-50%, -10px)';
