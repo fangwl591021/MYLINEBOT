@@ -1,501 +1,221 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE OA 專業模型訓練中心</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        :root {
-            --line-green: #06C755;
-            --line-dark-green: #05b34c;
-            --sidebar-bg: #2b303b;
-            --main-bg: #f8fafc;
-            --input-border: #94a3b8; 
-        }
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--main-bg); color: #1e293b; overflow: hidden; }
-        
-        /* 側邊欄 */
-        .sidebar { width: 240px; background-color: var(--sidebar-bg); color: #ffffff; shrink: 0; }
-        .sidebar-item { padding: 14px 20px; display: flex; align-items: center; gap: 12px; transition: 0.2s; color: #94a3b8; cursor: pointer; border-left: 4px solid transparent; }
-        .sidebar-item:hover { background-color: #3e4451; color: #ffffff; }
-        .sidebar-item.active { background-color: #3e4451; color: #ffffff; border-left-color: var(--line-green); }
-        .header { height: 60px; background: white; border-bottom: 1px solid #e2e8f0; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
-        
-        /* 欄位邊框顯著化 (2px 強化) */
-        .input-label { font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px; display: block; text-transform: uppercase; }
-        .input-field { 
-            width: 100%; 
-            font-size: 13px; 
-            padding: 8px 12px; 
-            border: 2px solid var(--input-border); 
-            border-radius: 8px; 
-            outline: none; 
-            transition: all 0.2s; 
-            background-color: #ffffff;
-            color: #000;
-        }
-        .input-field:focus { border-color: var(--line-green); box-shadow: 0 0 0 4px rgba(6, 199, 85, 0.2); }
-
-        /* 滑動切換 (Segmented Control) */
-        .segmented-control { display: flex; background: #e2e8f0; padding: 4px; border-radius: 10px; border: 2px solid #cbd5e1; }
-        .seg-btn { flex: 1; text-align: center; padding: 5px; font-size: 11px; font-weight: 800; border-radius: 6px; transition: 0.2s; color: #64748b; cursor: pointer; }
-        .seg-btn.active { background: #ffffff; color: var(--line-green); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-
-        /* 顏色控制 */
-        .color-control { display: flex; align-items: center; gap: 8px; background: #f1f5f9; padding: 6px 10px; border-radius: 8px; border: 2px solid var(--input-border); }
-        .color-box { width: 24px; height: 24px; border: 2px solid #fff; border-radius: 4px; cursor: pointer; background: none; padding: 0; }
-
-        /* 按鈕樣式 (綠底白字) */
-        .btn-green-ui { background-color: var(--line-green) !important; color: #ffffff !important; font-weight: 800 !important; opacity: 1 !important; border: none; }
-        .btn-green-ui:hover { background-color: var(--line-dark-green) !important; }
-        .nav-text-active { color: #ffffff !important; background-color: var(--line-green) !important; font-weight: 800 !important; }
-        .nav-text-fix { color: #475569 !important; font-weight: 700 !important; }
-
-        /* 模型卡片 */
-        .template-card { border: 2px solid transparent; transition: 0.3s; cursor: pointer; }
-        .template-card:hover { border-color: var(--line-green); transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-
-        /* 預覽模擬 */
-        .chat-room-bg { background-color: #7988a0; height: 100%; overflow-y: auto; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
-        .carousel-wrapper { display: flex; gap: 16px; padding-bottom: 20px; max-width: 100%; overflow-x: auto; scroll-snap-type: x mandatory; }
-        .flex-bubble-container { width: 320px; shrink: 0; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); background: white; scroll-snap-align: center; position: relative; }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    </style>
-</head>
-<body class="h-screen flex">
-
-    <svg style="display: none;">
-        <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
-        <symbol id="icon-layers" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
-        <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
-        <symbol id="icon-copy" viewBox="0 0 24 24"><rect width="13" height="13" x="9" y="9" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
-        <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></symbol>
-    </svg>
-
-    <aside class="sidebar h-full flex flex-col z-30 shadow-2xl">
-        <div class="p-6 mb-4">
-            <div class="flex items-center gap-3 bg-white/10 p-3 rounded-xl">
-                <div class="bg-line-green p-1.5 rounded-lg text-white font-bold"><i data-lucide="layout" class="w-5 h-5"></i></div>
-                <span class="font-bold text-base tracking-tight text-white">版型訓練中心</span>
-            </div>
-        </div>
-        <nav class="flex-1">
-            <div class="sidebar-item active" onclick="exitEditor()">
-                <i data-lucide="grid" class="w-5 h-5"></i> 模型大廳
-            </div>
-        </nav>
-    </aside>
-
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <header class="header shrink-0 shadow-sm z-20">
-            <div id="header-nav" class="flex items-center gap-2 text-sm text-slate-400 font-bold">
-                <span class="cursor-pointer hover:text-slate-600" onclick="exitEditor()">模型庫</span>
-                <div id="editor-breadcrumb" class="hidden flex items-center gap-2">
-                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
-                    <span class="text-slate-900" id="current-template-name">模型訓練器</span>
-                </div>
-            </div>
-            <div id="editor-actions" class="hidden flex gap-3">
-                <button onclick="exitEditor()" class="px-4 py-2 text-xs font-bold text-slate-500">離開</button>
-                <button onclick="exportJSON()" class="btn-green-ui px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 transition shadow-lg">
-                    <i data-lucide="copy" class="w-4 h-4"></i> 複製完整 JSON
-                </button>
-            </div>
-        </header>
-
-        <main id="view-dashboard" class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-            <div class="max-w-6xl mx-auto">
-                <div class="mb-12 text-center">
-                    <h2 class="text-3xl font-bold text-slate-800">選擇模型載入預設參數</h2>
-                    <p class="text-slate-400 mt-2">點擊下方範本即可以原始檔參數開始訓練。</p>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div onclick="enterEditor('PORTAL')" class="template-card bg-white p-8 rounded-3xl shadow-sm flex flex-col items-center text-center">
-                        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-6"><i data-lucide="user" class="w-8 h-8"></i></div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-3">數位名片模型 (Portal)</h3>
-                        <p class="text-sm text-slate-400 mb-6">JOY 藥局架構：Header、Hero 影片、2x2 按鈕矩陣。</p>
-                        <button class="btn-green-ui px-8 py-2 rounded-full text-xs">載入 JOY 藥局資料</button>
-                    </div>
-                    <div onclick="enterEditor('GRID')" class="template-card bg-white p-8 rounded-3xl shadow-sm flex flex-col items-center text-center border-2 border-green-50">
-                        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6"><i data-lucide="layers" class="w-8 h-8"></i></div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-3">商品展示模型 (Grid)</h3>
-                        <p class="text-sm text-slate-400 mb-6">高級版型：支援比例選擇、背景切換、3/4 欄切換。</p>
-                        <button class="btn-green-ui px-8 py-2 rounded-full text-xs">載入網格資料</button>
-                    </div>
-                    <div onclick="enterEditor('HYBRID')" class="template-card bg-slate-900 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center">
-                        <div class="w-16 h-16 bg-white/10 text-line-green rounded-2xl flex items-center justify-center mb-6"><i data-lucide="plus" class="w-8 h-8"></i></div>
-                        <h3 class="text-xl font-bold text-white mb-3">自由混合引擎</h3>
-                        <p class="text-sm text-slate-400 mb-6">進階模式：建立 Carousel 輪播，且每一頁可混合不同模型。</p>
-                        <button class="btn-green-ui px-8 py-2 rounded-full text-xs">開啟混合引擎</button>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <main id="view-editor" class="flex-1 hidden overflow-hidden flex">
-            <!-- 左側控制 -->
-            <aside class="w-[450px] bg-white border-r border-slate-200 overflow-y-auto p-6 space-y-8 custom-scrollbar shadow-inner">
-                <div id="carousel-manager" class="space-y-4 hidden">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">分頁訓練</h3>
-                        <button onclick="addCard()" id="btn-add-page" class="text-[10px] font-bold text-line-green border-2 border-line-green px-3 py-1 rounded-lg hover:bg-line-green hover:text-white transition">+ 增加分頁</button>
-                    </div>
-                    <div id="card-nav" class="flex gap-4 overflow-x-auto pb-6 custom-scrollbar"></div>
-                </div>
-
-                <div class="bg-slate-100 p-4 rounded-2xl border-2 border-slate-200">
-                    <label class="input-label text-slate-600">目前分頁範本</label>
-                    <select id="select-card-type" onchange="changeCardType(this.value)" class="w-full text-sm font-bold p-2.5 bg-white border-2 border-[#94a3b8] rounded-xl outline-none focus:border-line-green transition">
-                        <option value="PORTAL">數位名片入口模型</option>
-                        <option value="GRID">商品展示模型 (高級網格)</option>
-                    </select>
-                </div>
-
-                <div id="editor-fields-container" class="space-y-10">
-                    <!-- Header -->
-                    <section id="section-header" class="space-y-4">
-                        <h4 class="text-xs font-black text-slate-800 border-b-2 border-slate-100 pb-2 flex justify-between items-center">
-                            <span class="flex items-center gap-2"><span class="w-1.5 h-3 bg-line-green rounded-full"></span> 品牌識別 (Header)</span>
-                            <div class="color-control"><span class="text-[9px] text-slate-400">底色</span><input type="color" id="in-header-bg" onchange="updateActiveCard('headerBgColor', this.value)" class="color-box"></div>
-                        </h4>
-                        <div class="space-y-3">
-                            <input type="text" id="in-header-logo" oninput="updateActiveCard('headerLogo', this.value)" class="input-field" placeholder="Logo 網址">
-                            <div class="grid grid-cols-2 gap-3">
-                                <input type="text" id="in-header-title" oninput="updateActiveCard('headerTitle', this.value)" class="input-field" placeholder="主標">
-                                <input type="text" id="in-header-sub" oninput="updateActiveCard('headerSub', this.value)" class="input-field" placeholder="副標">
-                            </div>
-                            <input type="text" id="in-header-desc" oninput="updateActiveCard('headerDesc', this.value)" class="input-field" placeholder="描述">
-                        </div>
-                    </section>
-
-                    <!-- Hero -->
-                    <section id="section-hero" class="space-y-4">
-                        <h4 class="text-xs font-black text-slate-800 border-b-2 border-slate-100 pb-2 flex justify-between items-center">
-                            <div class="flex items-center gap-2"><span class="w-1.5 h-3 bg-line-green rounded-full"></span> 視覺素材 (Hero)</div>
-                            <div class="flex items-center gap-2">
-                                <input type="color" id="in-hero-bg" onchange="updateActiveCard('heroBgColor', this.value)" class="color-box !w-5 !h-5">
-                                <div class="segmented-control">
-                                    <button onclick="updateHeroType('image')" id="btn-hero-img" class="seg-btn">圖片</button>
-                                    <button onclick="updateHeroType('video')" id="btn-hero-vid" class="seg-btn">影片</button>
-                                    <button onclick="updateHeroType('none')" id="btn-hero-none" class="seg-btn">無</button>
-                                </div>
-                            </div>
-                        </h4>
-                        <div class="space-y-4">
-                            <div><label class="input-label">顯示比例</label><select id="in-hero-ratio" onchange="updateActiveCard('aspectRatio', this.value)" class="input-field"><option value="16:9">16:9</option><option value="1:1">1:1</option><option value="4:3">4:3</option><option value="1.91:1">1.91:1</option><option value="3:4">3:4</option></select></div>
-                            <input type="text" id="in-hero-url" oninput="updateActiveCard('heroUrl', this.value)" class="input-field" placeholder="素材網址">
-                            <div id="box-video-poster"><input type="text" id="in-hero-poster" oninput="updateActiveCard('videoPoster', this.value)" class="input-field" placeholder="影片封面"></div>
-                        </div>
-                    </section>
-
-                    <!-- Body -->
-                    <section id="section-body" class="space-y-4">
-                        <h4 class="text-xs font-black text-slate-800 border-b-2 border-slate-100 pb-2 flex justify-between items-center">
-                            <span class="flex items-center gap-2"><span class="w-1.5 h-3 bg-line-green rounded-full"></span> 內容背景 (Body)</span>
-                            <div class="flex items-center gap-2">
-                                <input type="color" id="in-body-bg-color" onchange="updateActiveCard('bodyBgColor', this.value)" class="color-box !w-4 !h-4">
-                                <div class="segmented-control !p-0.5"><button onclick="updateActiveCard('bodyBgType', 'color');syncUI();" id="btn-bg-color" class="seg-btn !py-1">純色</button><button onclick="updateActiveCard('bodyBgType', 'image');syncUI();" id="btn-bg-img" class="seg-btn !py-1">圖片</button></div>
-                            </div>
-                        </h4>
-                        <div id="box-body-bg-img" class="hidden space-y-2">
-                            <div class="grid grid-cols-2 gap-3"><select id="in-body-bg-mode" onchange="updateActiveCard('bodyBgMode', this.value)" class="input-field"><option value="cover">全版覆蓋</option><option value="top">等比置頂</option></select><input type="text" id="in-body-bg-url" oninput="updateActiveCard('bodyBgUrl', this.value)" class="input-field" placeholder="背景圖網址"></div>
-                        </div>
-                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border-2 border-slate-200">
-                            <div class="flex gap-3"><div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400">標籤底</span><input type="color" id="in-tag-bg" onchange="updateActiveCard('tagBgColor', this.value)" class="w-4 h-4 p-0 bg-transparent border-none cursor-pointer"></div><div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400">文字</span><input type="color" id="in-tag-text" onchange="updateActiveCard('tagTextColor', this.value)" class="w-4 h-4 p-0 bg-transparent border-none cursor-pointer"></div></div>
-                            <select id="in-cols" onchange="updateActiveCard('columns', parseInt(this.value))" class="text-[10px] border-2 border-slate-400 rounded h-6"><option value="2">2 欄</option><option value="3">3 欄</option><option value="4">4 欄</option></select>
-                        </div>
-                        <div id="items-list" class="space-y-3"></div>
-                        <button onclick="addItem()" class="w-full py-3 border-2 border-dashed border-slate-400 rounded-2xl text-slate-400 text-xs font-bold hover:border-line-green transition">+ 增加項目</button>
-                    </section>
-
-                    <!-- Footer -->
-                    <section id="section-footer" class="space-y-4 pb-12">
-                        <h4 class="text-xs font-black text-slate-800 border-b-2 border-slate-100 pb-2 flex justify-between items-center">
-                            <span class="flex items-center gap-2"><span class="w-1.5 h-3 bg-line-green rounded-full"></span> 底部按鈕 (Footer)</span>
-                            <input type="color" id="in-footer-bg" onchange="updateActiveCard('footerBgColor', this.value)" class="color-box">
-                        </h4>
-                        <div class="space-y-4">
-                            <div class="p-4 bg-slate-50 border-2 border-[#cbd5e1] rounded-2xl space-y-2">
-                                <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">按鈕 1 <input type="color" id="in-f1-color" onchange="updateActiveCard('btn1Color', this.value)" class="w-4 h-4 border-none p-0 cursor-pointer"></div>
-                                <input type="text" id="in-f1-label" oninput="updateActiveCard('btn1Label', this.value)" class="input-field" placeholder="名稱">
-                                <input type="text" id="in-f1-url" oninput="updateActiveCard('btn1Url', this.value)" class="w-full text-[10px] p-2 border-2 border-[#94a3b8] rounded-lg outline-none" placeholder="連結">
-                            </div>
-                            <div class="p-4 bg-slate-50 border-2 border-[#cbd5e1] rounded-2xl space-y-2">
-                                <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">按鈕 2 <input type="color" id="in-f2-color" onchange="updateActiveCard('btn2Color', this.value)" class="w-4 h-4 border-none p-0 cursor-pointer"></div>
-                                <input type="text" id="in-f2-label" oninput="updateActiveCard('btn2Label', this.value)" class="input-field" placeholder="名稱">
-                                <input type="text" id="in-f2-url" oninput="updateActiveCard('btn2Url', this.value)" class="w-full text-[10px] p-2 border-2 border-[#94a3b8] rounded-lg outline-none" placeholder="連結">
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </aside>
-
-            <!-- 右側預覽 -->
-            <section class="flex-1 chat-room-bg custom-scrollbar relative">
-                <div class="sticky top-0 w-full text-center py-4 z-20 pointer-events-none">
-                    <span class="bg-black/30 backdrop-blur-md text-white text-[10px] px-4 py-2 rounded-full font-bold tracking-widest shadow-xl border border-white/10 uppercase">Live Model Preview v7.0</span>
-                </div>
-                <div class="flex items-start gap-3 w-full max-w-full px-12 mt-10">
-                    <div class="w-10 h-10 rounded-full bg-slate-400 shrink-0 shadow-lg border-2 border-white/20"></div>
-                    <div class="carousel-wrapper custom-scrollbar" id="preview-area"></div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-10 py-4 rounded-full shadow-2xl opacity-0 transition-all pointer-events-none z-50 transform translate-y-4 font-bold">JSON 程式碼已複製</div>
-
-    <script>
-        lucide.createIcons();
-
-        // 核心資料範本
-        const JOY_PORTAL = {
-            logo: "https://aiwe.cc/wp-content/uploads/2025/12/c4ca4238a0b923820dcc509a6f75849b-1.png",
-            video: "https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4",
-            poster: "https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200",
-            items: [
-                { title: "AI 諮詢", icon: "🤖", url: "https://line.me" },
-                { title: "產品介紹", icon: "🎥", url: "https://line.me" },
-                { title: "商品型錄", icon: "🧾", url: "https://line.me" },
-                { title: "門市資訊", icon: "📍", url: "https://line.me" }
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "horizontal",
+    "paddingAll": "8px",
+    "backgroundColor": "#1A1B1E",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://aiwe.cc/wp-content/uploads/2025/12/c4ca4238a0b923820dcc509a6f75849b-1.png",
+        "size": "xs",
+        "aspectRatio": "1:1",
+        "aspectMode": "cover"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "flex": 3,
+        "contents": [
+          {
+            "type": "text",
+            "text": "JOY",
+            "weight": "bold",
+            "color": "#D4AF37"
+          },
+          {
+            "type": "text",
+            "text": "台中行動藥局",
+            "color": "#E6E6E6"
+          },
+          {
+            "type": "text",
+            "text": "各式中西國內外醫藥品零售批發",
+            "size": "xs",
+            "color": "#A0A0A0",
+            "wrap": true
+          }
+        ]
+      }
+    ]
+  },
+  "hero": {
+    "type": "video",
+    "url": "https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4",
+    "previewUrl": "https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200",
+    "aspectRatio": "16:9",
+    "backgroundColor": "#000000",
+    "altContent": {
+      "type": "image",
+      "url": "https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200",
+      "size": "full",
+      "aspectMode": "cover"
+    }
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "paddingAll": "8px",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "vertical",
+        "spacing": "sm",
+        "paddingAll": "12px",
+        "backgroundColor": "#1F2024",
+        "cornerRadius": "14px",
+        "contents": [
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "sm",
+            "contents": [
+              {
+                "type": "box",
+                "layout": "vertical",
+                "paddingAll": "12px",
+                "backgroundColor": "#2A2C31",
+                "cornerRadius": "12px",
+                "action": {
+                  "type": "uri",
+                  "label": "AI 諮詢",
+                  "uri": "https://liff.line.me/2006625044-bPGxrB53/"
+                },
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "🤖",
+                    "size": "xl",
+                    "align": "center"
+                  },
+                  {
+                    "type": "text",
+                    "text": "AI 諮詢",
+                    "size": "sm",
+                    "align": "center",
+                    "color": "#E6E6E6"
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "paddingAll": "12px",
+                "backgroundColor": "#2A2C31",
+                "cornerRadius": "12px",
+                "action": {
+                  "type": "uri",
+                  "label": "產品介紹",
+                  "uri": "https://example.com/video"
+                },
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "🎥",
+                    "size": "xl",
+                    "align": "center"
+                  },
+                  {
+                    "type": "text",
+                    "text": "產品介紹",
+                    "size": "sm",
+                    "align": "center",
+                    "color": "#E6E6E6"
+                  }
+                ]
+              }
             ]
-        };
-
-        const GRID_SAMPLE = {
-            hero: "https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png",
-            bg: "https://lihi.cc/l5qqU",
-            items: [
-                { title: "現磨咖啡", img: "https://lihi.cc/mwMvo", url: "https://line.me" },
-                { title: "招牌甜點", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
-                { title: "精品咖啡", img: "https://lihi.cc/yRfpn", url: "https://line.me" }
+          },
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "sm",
+            "contents": [
+              {
+                "type": "box",
+                "layout": "vertical",
+                "paddingAll": "12px",
+                "backgroundColor": "#2A2C31",
+                "cornerRadius": "12px",
+                "action": {
+                  "type": "uri",
+                  "label": "商品型錄",
+                  "uri": "https://example.com/catalog"
+                },
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "🧾",
+                    "size": "xl",
+                    "align": "center"
+                  },
+                  {
+                    "type": "text",
+                    "text": "商品型錄",
+                    "size": "sm",
+                    "align": "center",
+                    "color": "#E6E6E6"
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "paddingAll": "12px",
+                "backgroundColor": "#2A2C31",
+                "cornerRadius": "12px",
+                "action": {
+                  "type": "uri",
+                  "label": "門市資訊",
+                  "uri": "https://example.com/map"
+                },
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "📍",
+                    "size": "xl",
+                    "align": "center"
+                  },
+                  {
+                    "type": "text",
+                    "text": "門市資訊",
+                    "size": "sm",
+                    "align": "center",
+                    "color": "#E6E6E6"
+                  }
+                ]
+              }
             ]
-        };
-
-        let cards = [];
-        let activeIdx = 0;
-        let editorMode = 'SINGLE';
-
-        // 數位名片初始化
-        function createPortalModel() {
-            return {
-                type: 'PORTAL',
-                headerLogo: JOY_PORTAL.logo, headerTitle: "JOY", headerSub: "台中行動藥局", headerDesc: "各式中西國內外醫藥品零售批發", headerBgColor: "#1A1B1E",
-                heroType: 'video', heroUrl: JOY_PORTAL.video, heroBgColor: "#000000", videoPoster: JOY_PORTAL.poster, aspectRatio: "16:9",
-                bodyBgType: 'color', bodyBgColor: "#0F0F10", bodyBgUrl: "", bodyBgMode: "cover",
-                tagBgColor: "#1F2024", tagTextColor: "#E6E6E6",
-                items: JSON.parse(JSON.stringify(JOY_PORTAL.items)),
-                footerBgColor: "#0F0F10", btn1Label: "🚀 啟動 AI 小幫手", btn1Color: "#C9A24D", btn1Url: "https://line.me", btn2Label: "📤 分享好友", btn2Color: "#2A2C31", btn2Url: "https://line.me",
-                columns: 2 
-            };
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#0F0F10",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#C9A24D",
+        "action": {
+          "type": "uri",
+          "label": "🚀 啟動 AI 小幫手",
+          "uri": "https://line.me"
         }
-
-        // 商品展示初始化
-        function createGridModel() {
-            return {
-                type: 'GRID',
-                headerLogo: "", headerTitle: "", headerSub: "", headerDesc: "", headerBgColor: "#FFFFFF",
-                heroType: 'image', heroUrl: GRID_SAMPLE.hero, heroBgColor: "#000000", videoPoster: "", aspectRatio: "16:9",
-                bodyBgType: 'image', bodyBgColor: "#F8F8F8", bodyBgUrl: GRID_SAMPLE.bg, bodyBgMode: "cover",
-                tagBgColor: "#0D0D0D", tagTextColor: "#FFFFFF",
-                items: JSON.parse(JSON.stringify(GRID_SAMPLE.items)),
-                footerBgColor: "#FFFFFF", btn1Label: "查看菜單", btn1Color: "#111111", btn1Url: "https://line.me", btn2Label: "立即分享", btn2Color: "#06C755", btn2Url: "https://line.me",
-                columns: 3
-            };
-        }
-
-        function enterEditor(type) {
-            editorMode = (type === 'HYBRID') ? 'HYBRID' : 'SINGLE';
-            if (type === 'PORTAL') cards = [createPortalModel()];
-            else if (type === 'GRID') cards = [createGridModel()];
-            else cards = [createPortalModel()]; // 混合預設
-            
-            activeIdx = 0;
-            document.getElementById('view-dashboard').classList.add('hidden');
-            document.getElementById('view-editor').classList.remove('hidden');
-            document.getElementById('editor-actions').classList.remove('hidden');
-            document.getElementById('editor-breadcrumb').classList.remove('hidden');
-            document.getElementById('current-template-name').innerText = type==='PORTAL'?'數位名片模型':(type==='GRID'?'商品展示模型':'混合引擎');
-            syncUI(); renderPreview();
-        }
-
-        function exitEditor() {
-            document.getElementById('view-dashboard').classList.remove('hidden');
-            document.getElementById('view-editor').classList.add('hidden');
-            document.getElementById('editor-actions').classList.add('hidden');
-            document.getElementById('editor-breadcrumb').classList.add('hidden');
-        }
-
-        function updateHeroType(type) {
-            cards[activeIdx].heroType = type;
-            if (type==='image') cards[activeIdx].heroUrl = cards[activeIdx].videoPoster || GRID_SAMPLE.hero;
-            else if (type==='video') cards[activeIdx].heroUrl = JOY_PORTAL.video;
-            syncUI(); renderPreview();
-        }
-
-        function updateActiveCard(key, val) {
-            cards[activeIdx][key] = val;
-            renderPreview();
-        }
-
-        function changeCardType(type) {
-            cards[activeIdx].type = type;
-            cards[activeIdx].columns = (type==='PORTAL') ? 2 : 3;
-            syncUI(); renderPreview();
-        }
-
-        function addCard() {
-            if(cards.length >= 12 || cards.some(c => c.heroType === 'video')) return;
-            cards.push(createGridModel());
-            activeIdx = cards.length - 1;
-            syncUI(); renderPreview();
-        }
-
-        function addItem() {
-            const cur = cards[activeIdx];
-            if(cur.type==='PORTAL') cur.items.push({ title: "新功能", icon: "✨", url: "https://line.me" });
-            else cur.items.push({ title: "新商品", img: JOY_PORTAL.logo, url: "https://line.me" });
-            syncUI(); renderPreview();
-        }
-
-        function syncUI() {
-            const cur = cards[activeIdx];
-            document.getElementById('carousel-manager').style.display = (editorMode === 'HYBRID') ? 'block' : 'none';
-            
-            document.getElementById('card-nav').innerHTML = cards.map((c, i) => `
-                <div class="relative shrink-0">
-                    <button onclick="activeIdx=${i};syncUI();renderPreview();" class="px-8 py-3.5 rounded-2xl text-xs font-bold border-2 transition-all ${i===activeIdx ? 'nav-text-active' : 'bg-white border-slate-100 nav-text-fix'}">P${i+1}</button>
-                    ${cards.length > 1 ? `<button onclick="event.stopPropagation();cards.splice(${i},1);activeIdx=0;syncUI();renderPreview();" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-md"><svg class="icon w-2.5 h-2.5"><use href="#icon-x"/></svg></button>` : ''}
-                </div>
-            `).join('');
-
-            // 同步基礎
-            document.getElementById('select-card-type').value = cur.type;
-            document.getElementById('in-header-bg').value = cur.headerBgColor;
-            document.getElementById('in-header-logo').value = cur.headerLogo;
-            document.getElementById('in-header-title').value = cur.headerTitle;
-            document.getElementById('in-header-sub').value = cur.headerSub;
-            document.getElementById('in-header-desc').value = cur.headerDesc;
-            document.getElementById('in-hero-bg').value = cur.heroBgColor;
-            document.getElementById('in-hero-ratio').value = cur.aspectRatio;
-            document.getElementById('in-hero-url').value = cur.heroUrl;
-            document.getElementById('in-hero-poster').value = cur.videoPoster;
-            document.getElementById('in-body-bg-color').value = cur.bodyBgColor;
-            document.getElementById('in-body-bg-url').value = cur.bodyBgUrl;
-            document.getElementById('in-body-bg-mode').value = cur.bodyBgMode;
-            document.getElementById('in-tag-bg').value = cur.tagBgColor;
-            document.getElementById('in-tag-text').value = cur.tagTextColor;
-            document.getElementById('in-cols').value = cur.columns;
-            document.getElementById('in-footer-bg').value = cur.footerBgColor;
-            document.getElementById('in-f1-label').value = cur.btn1Label;
-            document.getElementById('in-f1-color').value = cur.btn1Color;
-            document.getElementById('in-f1-url').value = cur.btn1Url;
-            document.getElementById('in-f2-label').value = cur.btn2Label;
-            document.getElementById('in-f2-color').value = cur.btn2Color;
-            document.getElementById('in-f2-url').value = cur.btn2Url;
-
-            // 狀態紐
-            document.getElementById('btn-hero-img').className = `seg-btn ${cur.heroType==='image'?'active':''}`;
-            document.getElementById('btn-hero-vid').className = `seg-btn ${cur.heroType==='video'?'active':''}`;
-            document.getElementById('btn-hero-none').className = `seg-btn ${cur.heroType==='none'?'active':''}`;
-            document.getElementById('btn-bg-color').className = `seg-btn ${cur.bodyBgType==='color'?'active':''}`;
-            document.getElementById('btn-bg-img').className = `seg-btn ${cur.bodyBgType==='image'?'active':''}`;
-            document.getElementById('box-video-poster').classList.toggle('hidden', cur.heroType !== 'video');
-            document.getElementById('box-body-bg-img').classList.toggle('hidden', cur.bodyBgType !== 'image');
-
-            // 列表
-            document.getElementById('items-list').innerHTML = cur.items.map((it, i) => `
-                <div class="p-4 bg-slate-50 border-2 border-[#94a3b8] rounded-2xl relative space-y-2 shadow-sm">
-                    <button onclick="cards[activeIdx].items.splice(${i},1);renderPreview();syncUI();" class="absolute top-1.5 right-1.5 text-slate-300 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    <div class="flex gap-2">
-                        ${cur.type==='PORTAL' 
-                          ? `<input type="text" value="${it.icon||''}" oninput="cards[activeIdx].items[${i}].icon=this.value;renderPreview();" class="w-12 text-center border-2 border-[#94a3b8] rounded-lg bg-white h-10">` 
-                          : `<div class="w-12 h-10 border-2 border-[#94a3b8] rounded-lg bg-white overflow-hidden"><img src="${it.img||JOY_PORTAL.logo}" class="w-full h-full object-cover"></div>`
-                        }
-                        <input type="text" value="${it.title}" oninput="cards[activeIdx].items[${i}].title=this.value;renderPreview();" class="flex-1 text-xs p-1 border-2 border-[#94a3b8] rounded-lg bg-white h-10 font-bold">
-                    </div>
-                    ${cur.type==='GRID' 
-                      ? `<input type="text" value="${it.img||''}" oninput="cards[activeIdx].items[${i}].img=this.value;renderPreview();" class="w-full text-[10px] p-2 border-2 border-[#94a3b8] rounded-lg bg-white font-mono" placeholder="圖片連結">` 
-                      : `<input type="text" value="${it.url||''}" oninput="cards[activeIdx].items[${i}].url=this.value;renderPreview();" class="w-full text-[10px] p-2 border-2 border-[#94a3b8] rounded-lg bg-white font-mono" placeholder="跳轉網址">`
-                    }
-                </div>
-            `).join('');
-            lucide.createIcons();
-            document.getElementById('section-header').style.display = (cur.type==='PORTAL') ? 'block' : 'none';
-        }
-
-        function renderPreview() {
-            const area = document.getElementById('preview-area');
-            area.innerHTML = cards.map((c, idx) => {
-                let headerHtml = '';
-                if(c.type==='PORTAL') {
-                    headerHtml = `<div class="flex gap-3 p-3 items-center" style="background-color: ${c.headerBgColor}">
-                        <img src="${c.headerLogo}" class="w-10 h-10 rounded-lg object-cover bg-white">
-                        <div class="flex flex-col"><span style="color: #D4AF37" class="text-sm font-bold leading-none">${c.headerTitle}</span><span style="color: #E6E6E6" class="text-[10px] mt-1">${c.headerSub}</span><span style="color: #A0A0A0" class="text-[8px] leading-tight mt-0.5">${c.headerDesc}</span></div>
-                    </div>`;
-                }
-                const ratioClass = `aspect-${c.aspectRatio.replace(':', '-')}`;
-                const heroHtml = c.heroType==='none' ? '' : `<div class="relative w-full overflow-hidden ${ratioClass}" style="background-color: ${c.heroBgColor}">
-                    <img src="${(c.heroType==='video')?c.videoPoster:c.heroUrl}" class="w-full h-full object-cover">
-                    ${c.heroType==='video' ? `<div class="absolute inset-0 flex items-center justify-center bg-black/10"><div class="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center shadow-2xl"><i data-lucide="play" class="w-7 h-7 ml-1 fill-slate-900"></i></div></div>` : ''}
-                </div>`;
-                let bodyHtml = '';
-                if(c.type==='PORTAL') {
-                    const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
-                    bodyHtml = `<div class="p-2" style="background-color: ${c.bodyBgColor}"><div class="flex flex-col gap-2 p-3 rounded-2xl" style="background-color: #1F2024">
-                        ${chunk(c.items, 2).map(row => `<div class="flex gap-2">${row.map(it => `<div class="flex-1 flex flex-col items-center p-3 rounded-xl bg-[#2A2C31]"><span class="text-xl mb-1">${it.icon}</span><span class="text-[10px] font-bold text-[#E6E6E6]">${it.title}</span></div>`).join('')}</div>`).join('')}
-                    </div></div>`;
-                } else {
-                    const bgStyle = c.bodyBgType==='image' ? `background-image: url(${c.bodyBgUrl}); background-size: ${c.bodyBgMode}; background-position: top;` : `background-color: ${c.bodyBgColor};`;
-                    bodyHtml = `<div class="p-4 relative" style="${bgStyle}">
-                        <div class="grid gap-2 grid-cols-${c.columns}">${c.items.map(it => `<div class="bg-white rounded p-1 shadow-sm border border-[#cbd5e1] flex flex-col"><div class="aspect-square rounded overflow-hidden mb-1"><img src="${it.img||JOY_PORTAL.logo}" class="w-full h-full object-cover"></div><div style="background-color:${c.tagBgColor}; color:${c.tagTextColor}" class="text-[7px] font-bold text-center py-1 rounded truncate">${it.title}</div></div>`).join('')}</div>
-                    </div>`;
-                }
-                return `<div class="flex-bubble-container border-2 transition-all duration-500 ${idx === activeIdx ? 'border-line-green scale-105 z-10 shadow-2xl' : 'border-transparent opacity-60 scale-95'}">${headerHtml}${heroHtml}${bodyHtml}<div class="p-3 flex flex-col gap-2" style="background-color: ${c.footerBgColor}"><button class="w-full py-2.5 rounded-xl text-[11px] font-bold text-white shadow-lg btn-green-ui" style="background-color: ${c.btn1Color}">${c.btn1Label}</button><button class="w-full py-2.5 rounded-xl text-[11px] font-bold text-white shadow-lg btn-green-ui" style="background-color: ${c.btn2Color}">${c.btn2Label}</button></div></div>`;
-            }).join('');
-            lucide.createIcons();
-        }
-
-        function generateFlexJSON() {
-            const buildBubble = (c) => {
-                const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
-                const json = { type: "bubble", size: "mega" };
-                if (c.type==='PORTAL') {
-                    json.header = { type: "box", layout: "horizontal", paddingAll: "8px", backgroundColor: c.headerBgColor, contents: [{ type: "image", url: c.headerLogo, size: "xs", aspectRatio: "1:1", aspectMode: "cover" },{ type: "box", layout: "vertical", contents: [{ type: "text", text: c.headerTitle, weight: "bold", color: "#D4AF37" },{ type: "text", text: c.headerSub, color: "#E6E6E6" },{ type: "text", text: c.headerDesc, size: "xs", color: "#A0A0A0", wrap: true }] }]};
-                }
-                if (c.heroType==='video') json.hero = { type: "video", url: c.heroUrl, previewUrl: c.videoPoster, aspectRatio: c.aspectRatio.replace(':', 'x') };
-                else if (c.heroType==='image') json.hero = { type: "image", url: c.heroUrl, size: "full", aspectRatio: c.aspectRatio, aspectMode: "cover" };
-                
-                if (c.type==='PORTAL') {
-                    json.body = { type: "box", layout: "vertical", paddingAll: "8px", contents: [{ type: "box", layout: "vertical", paddingAll: "12px", backgroundColor: "#1F2024", cornerRadius: "14px", contents: chunk(c.items, 2).map(row => ({ type: "box", layout: "horizontal", spacing: "sm", contents: row.map(it => ({ type: "box", layout: "vertical", paddingAll: "12px", backgroundColor: c.tagBgColor, cornerRadius: "12px", action: { type: "uri", label: it.title, uri: it.url }, contents: [{ type: "text", text: it.icon, size: "xl", align: "center" },{ type: "text", text: it.title, size: "sm", align: "center", color: c.tagTextColor }] })) })) }]};
-                } else {
-                    const bodyContents = [];
-                    if (c.bodyBgType==='image') bodyContents.push({ type: "image", url: c.bodyBgUrl, position: "absolute", size: "full", aspectMode: c.bodyBgMode });
-                    bodyContents.push({ type: "box", layout: "vertical", paddingAll: "12px", contents: chunk(c.items, c.columns).map(row => ({ type: "box", layout: "horizontal", spacing: "sm", contents: row.map(it => ({ type: "box", layout: "vertical", width: (100/c.columns)+"%", action: { type: "uri", uri: it.url }, contents: [ { type: "image", url: it.img, aspectRatio: "1:1", aspectMode: "cover", size: "full" }, { type: "box", layout: "vertical", backgroundColor: c.tagBgColor, cornerRadius: "sm", paddingAll: "xs", contents: [{ type: "text", text: it.title, color: c.tagTextColor, size: "xxs", align: "center", weight: "bold", wrap: true }] } ] })) })) });
-                    json.body = { type: "box", layout: "vertical", backgroundColor: c.bodyBgColor, contents: bodyContents };
-                }
-                json.footer = { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", color: c.btn1Color, action: { type: "uri", label: c.btn1Label, uri: c.btn1Url } },{ type: "button", style: "primary", color: c.btn2Color, action: { type: "uri", label: c.btn2Label, uri: c.btn2Url } }]};
-                json.styles = { body: { backgroundColor: c.bodyBgColor }, footer: { backgroundColor: c.footerBgColor } };
-                return json;
-            };
-            return cards.length === 1 ? buildBubble(cards[0]) : { type: "carousel", contents: cards.map(c => buildBubble(c)) };
-        }
-
-        function exportJSON() {
-            const el = document.createElement('textarea');
-            el.value = JSON.stringify(generateFlexJSON(), null, 2);
-            document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
-            const toast = document.getElementById('toast');
-            toast.style.opacity = '1'; toast.style.transform = 'translate(-50%, -10px)';
-            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translate(-50%, 16px)'; }, 2500);
-        }
-
-        window.onload = () => exitEditor();
-    </script>
-</body>
-</html>
+      }
+    ]
+  },
+  "styles": {
+    "body": {
+      "backgroundColor": "#0F0F10"
+    },
+    "footer": {
+      "backgroundColor": "#0F0F10"
+    }
+  }
+}
