@@ -2,204 +2,55 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8" />
-<title>名片編輯器</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>名片編輯器</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
 <style>
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
-  background: #0f0f10;
-  color: #fff;
-}
-.container {
-  max-width: 420px;
-  margin: auto;
-  padding: 16px;
-}
-input {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 6px;
-  border: none;
-  background: #2a2c31;
-  color: #fff;
-}
-button {
-  width: 100%;
-  margin-top: 16px;
-  padding: 12px;
-  border-radius: 8px;
-  border: none;
-  background: #c9a24d;
-  color: #000;
-  font-size: 16px;
-}
-.small {
-  font-size: 13px;
-  color: #aaa;
-  margin-top: 6px;
-}
-.avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
-  margin-bottom: 12px;
+  background:#0f0f10;
+  color:#fff;
+  font-family:sans-serif;
+  padding:16px;
 }
 </style>
 </head>
 
 <body>
-<div class="container" id="app">
-  <div id="status">INIT...</div>
-</div>
+<div id="app">INIT...</div>
 
 <script>
-/* =========================
-   設定（必改）
-========================= */
-const LIFF_ID = '2008924519-nfub56Qt'
+const LIFF_ID = '2008924519-PkufAIve'
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyH9GnY0Q2orFoIRxZgU3NzNEeAiQDDQYiwTw814ZFcmMEoBHUXf75mcSM1q25Orgdp/exec'
+const token = new URLSearchParams(location.search).get('token')
 
-/* =========================
-   全域狀態
-========================= */
-let profile = null
-const urlParams = new URLSearchParams(location.search)
-const token = urlParams.get('token')     // 可能為 null
-const authMode = token ? 'token' : 'self'
+async function safeInit() {
+  try {
+    document.getElementById('app').innerText = 'call liff.init'
+    await liff.init({ liffId: LIFF_ID })
 
-/* =========================
-   初始化
-========================= */
-init()
+    document.getElementById('app').innerText = 'liff ready'
 
-async function init() {
-  log('call liff.init')
+    if (!liff.isLoggedIn()) {
+      liff.login()
+      return
+    }
 
-  await liff.init({ liffId: LIFF_ID })
-  log('liff ready')
+    document.getElementById('app').innerText = 'get profile'
+    const profile = await liff.getProfile()
 
-  if (!liff.isLoggedIn()) {
-    log('redirect login')
-    liff.login()
-    return
+    document.getElementById('app').innerHTML = `
+      <h3>LIFF 正常</h3>
+      <div>名稱：${profile.displayName}</div>
+      <img src="${profile.pictureUrl}" width="80">
+      <div>token：${token || 'none'}</div>
+    `
+  } catch (err) {
+    document.getElementById('app').innerHTML =
+      '<pre style="color:red">' + err + '</pre>'
   }
-
-  profile = await liff.getProfile()
-  log('got profile')
-
-  // ① 確保名片存在（只要 userId）
-  await ensureCard()
-
-  // ② 載入名片
-  const card = await loadCard()
-
-  // ③ render UI
-  render(card)
 }
 
-/* =========================
-   UI Render
-========================= */
-function render(card) {
-  document.getElementById('app').innerHTML = `
-    <img class="avatar" src="${profile.pictureUrl}">
-    <div class="small">LINE 使用者：${profile.displayName}</div>
-
-    <input id="name" placeholder="名稱" value="${card.header?.name || ''}">
-    <input id="subtitle" placeholder="副標" value="${card.header?.subtitle || ''}">
-    <input id="image" placeholder="主圖 URL" value="${card.hero?.image?.url || ''}">
-
-    <button onclick="save()">💾 儲存名片</button>
-    <div class="small">儲存後將自動關閉視窗</div>
-  `
-}
-
-/* =========================
-   GAS API
-========================= */
-async function ensureCard() {
-  await fetch(GAS_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'createDefaultCard',
-      userId: profile.userId,
-      displayName: profile.displayName,
-      pictureUrl: profile.pictureUrl,
-    }),
-  })
-}
-
-async function loadCard() {
-  const res = await fetch(GAS_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'getCardByUserId',
-      userId: profile.userId,
-    }),
-  })
-
-  const data = await res.json()
-  return data.card || {}
-}
-
-async function save() {
-  const card = {
-    header: {
-      avatarUrl: profile.pictureUrl,
-      name: document.getElementById('name').value,
-      subtitle: document.getElementById('subtitle').value,
-      bgColor: '#1A1B1E',
-    },
-    hero: {
-      mode: 'image',
-      image: {
-        url: document.getElementById('image').value,
-      },
-    },
-  }
-
-  const payload = {
-    action: 'saveCard',
-    card,
-  }
-
-  // 🔐 token 模式（從 LINE 指令進來）
-  if (authMode === 'token') {
-    payload.token = token
-  } else {
-    // 👤 本人模式（Rich Menu / 直接開 LIFF）
-    payload.userId = profile.userId
-  }
-
-  const res = await fetch(GAS_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  const data = await res.json()
-
-  if (!data.ok) {
-    alert('❌ 儲存失敗')
-    return
-  }
-
-  alert('✅ 名片已儲存，請回 LINE 輸入「顯示名片」')
-  liff.closeWindow()
-}
-
-/* =========================
-   Log
-========================= */
-function log(msg) {
-  document.getElementById('status').innerText = msg
-}
+safeInit()
 </script>
 </body>
 </html>
