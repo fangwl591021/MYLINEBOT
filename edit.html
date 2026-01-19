@@ -58,7 +58,7 @@ button {
 
 <script>
 /* =========================
-   設定區（必改）
+   設定（必改）
 ========================= */
 const LIFF_ID = '2008924519-nfub56Qt'
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxUk3hZcUHSROrzVTje-kZMQHB8jQezr6vDt6YDPebOqXbjsdbzDETj99Ed9pzxrSXN/exec'
@@ -67,7 +67,9 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxUk3hZcUHSROrzVTje
    全域狀態
 ========================= */
 let profile = null
-let token = new URLSearchParams(location.search).get('token')
+const urlParams = new URLSearchParams(location.search)
+const token = urlParams.get('token')     // 可能為 null
+const authMode = token ? 'token' : 'self'
 
 /* =========================
    初始化
@@ -78,7 +80,6 @@ async function init() {
   log('call liff.init')
 
   await liff.init({ liffId: LIFF_ID })
-
   log('liff ready')
 
   if (!liff.isLoggedIn()) {
@@ -90,14 +91,18 @@ async function init() {
   profile = await liff.getProfile()
   log('got profile')
 
+  // ① 確保名片存在（只要 userId）
   await ensureCard()
+
+  // ② 載入名片
   const card = await loadCard()
 
+  // ③ render UI
   render(card)
 }
 
 /* =========================
-   UI
+   UI Render
 ========================= */
 function render(card) {
   document.getElementById('app').innerHTML = `
@@ -159,14 +164,23 @@ async function save() {
     },
   }
 
+  const payload = {
+    action: 'saveCard',
+    card,
+  }
+
+  // 🔐 token 模式（從 LINE 指令進來）
+  if (authMode === 'token') {
+    payload.token = token
+  } else {
+    // 👤 本人模式（Rich Menu / 直接開 LIFF）
+    payload.userId = profile.userId
+  }
+
   const res = await fetch(GAS_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'saveCard',
-      token,
-      card,
-    }),
+    body: JSON.stringify(payload),
   })
 
   const data = await res.json()
