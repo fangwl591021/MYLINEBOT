@@ -9,48 +9,41 @@
 
 <body>
 <h3>名片編輯器</h3>
+
 <input id="name" placeholder="名稱"><br><br>
 <input id="subtitle" placeholder="副標"><br><br>
-<input id="image" placeholder="主圖 URL"><br><br>
+<input id="image" placeholder="圖片 URL"><br><br>
+
 <button onclick="save()">儲存名片</button>
 
 <script>
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxUk3hZcUHSROrzVTje-kZMQHB8jQezr6vDt6YDPebOqXbjsdbzDETj99Ed9pzxrSXN/exec'
+const GAS_API_URL = '你的 GAS Web App URL'
 const LIFF_ID = '2008924519-PkufAIve'
 const token = new URLSearchParams(location.search).get('token')
-
 let profile = {}
 
 async function init() {
   await liff.init({ liffId: LIFF_ID })
-  if (!liff.isLoggedIn()) {
-    liff.login()
-    return
-  }
+  if (!liff.isLoggedIn()) return liff.login()
   profile = await liff.getProfile()
 }
 init()
 
 async function save() {
   const card = {
-    displayName: profile.displayName,
-    pictureUrl: profile.pictureUrl,
     header: {
       avatarUrl: profile.pictureUrl,
       name: name.value,
       subtitle: subtitle.value,
+      bgColor: '#1A1B1E',
     },
     hero: {
       mode: 'image',
       image: { url: image.value },
     },
-    footer: {
-      maxButtons: 2,
-      buttons: [],
-    },
   }
 
-  await fetch(GAS_API_URL, {
+  const res = await fetch(GAS_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -60,7 +53,10 @@ async function save() {
     }),
   })
 
-  alert('✅ 名片已儲存，回 LINE 輸入「顯示名片」')
+  const data = await res.json()
+  if (!data.ok) return alert('❌ 儲存失敗')
+
+  alert('✅ 名片已儲存，請回 LINE 輸入「顯示名片」')
 }
 </script>
 </body>
