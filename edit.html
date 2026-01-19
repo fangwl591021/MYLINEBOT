@@ -1,148 +1,50 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>名片編輯器</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>編輯名片</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-<style>
-body {
-  margin: 0;
-  padding: 16px;
-  background: #0f0f10;
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
-}
-.box {
-  max-width: 420px;
-  margin: auto;
-}
-.log {
-  font-size: 13px;
-  color: #aaa;
-  margin-top: 12px;
-  white-space: pre-wrap;
-}
-input {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 6px;
-  border: none;
-  background: #2a2c31;
-  color: #fff;
-}
-button {
-  width: 100%;
-  margin-top: 16px;
-  padding: 12px;
-  border-radius: 8px;
-  border: none;
-  background: #c9a24d;
-  color: #000;
-  font-size: 16px;
-}
-img {
-  border-radius: 12px;
-  margin-top: 12px;
-}
-</style>
 </head>
 
 <body>
-<div class="box" id="app">
-  <div id="status">INIT...</div>
-</div>
+<h3 id="status">INIT...</h3>
+
+<input id="name" placeholder="名稱">
+<input id="subtitle" placeholder="副標">
+<button onclick="save()">儲存</button>
 
 <script>
-/* =========================
-   設定（確認可用）
-========================= */
 const LIFF_ID = '2008924519-PkufAIve'
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxq5rAWkYMLQgVmWD7racJAcIZN0OwO0FURFJVhJp-adbIQrKAUjoRAiwrNf0m6d0cQ/exec'
+const token = new URLSearchParams(location.search).get('token')
 
-/* =========================
-   工具
-========================= */
-function setView(html) {
-  document.getElementById('app').innerHTML = html
-}
-function log(msg) {
-  document.getElementById('status').innerText = msg
-}
-
-/* =========================
-   主流程
-========================= */
-safeInit()
-
-async function safeInit() {
-  try {
-    log('call liff.init')
-    await liff.init({ liffId: LIFF_ID })
-    log('liff ready')
-
-    // ✅ External LIFF：一定要 login
-    if (!liff.isLoggedIn()) {
-      log('redirect to LINE login')
-      liff.login()
-      return
-    }
-
-    log('get profile')
-    const profile = await liff.getProfile()
-    const token = new URLSearchParams(location.search).get('token')
-
-    if (!token) {
-      renderView(profile)
-      return
-    }
-
-    renderEditor(profile, token)
-
-  } catch (e) {
-    setView(`<pre style="color:red">ERROR\n${e}</pre>`)
+async function init() {
+  await liff.init({ liffId: LIFF_ID })
+  if (!liff.isLoggedIn()) {
+    liff.login()
+    return
   }
+  document.getElementById('status').innerText = '可編輯'
 }
+init()
 
-/* =========================
-   顯示模式
-========================= */
-function renderView(profile) {
-  setView(`
-    <h3>你的名片</h3>
-    <img src="${profile.pictureUrl}" width="80">
-    <div>名稱：${profile.displayName}</div>
-    <div class="log">
-      此頁為顯示模式  
-      請從 LINE 輸入「編輯名片」進行修改
-    </div>
-  `)
-}
-
-/* =========================
-   編輯模式
-========================= */
-function renderEditor(profile, token) {
-  setView(`
-    <h3>編輯名片</h3>
-    <img src="${profile.pictureUrl}" width="80">
-
-    <input id="name" placeholder="名稱" value="${profile.displayName}">
-    <input id="subtitle" placeholder="副標">
-    <input id="image" placeholder="主圖 URL">
-
-    <button onclick="save('${token}')">💾 儲存名片</button>
-    <div class="log">儲存後會自動關閉視窗</div>
-  `)
-}
-
-/* =========================
-   儲存（下一步再接 GAS）
-========================= */
-async function save(token) {
-  alert('External LIFF 登入完成\n畫面已正常')
+async function save() {
+  await fetch(GAS_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'saveCard',
+      token,
+      card: {
+        header: {
+          name: name.value,
+          subtitle: subtitle.value,
+        },
+      },
+    }),
+  })
+  alert('已儲存')
   liff.closeWindow()
 }
 </script>
