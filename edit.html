@@ -1,23 +1,19 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>編輯名片</title>
+<title>名片編輯</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
-
 <body>
-<h3 id="status">INIT...</h3>
-
-<input id="name" placeholder="名稱">
-<input id="subtitle" placeholder="副標">
-<button onclick="save()">儲存</button>
+<div id="app">INIT...</div>
 
 <script>
 const LIFF_ID = '2008924519-PkufAIve'
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxq5rAWkYMLQgVmWD7racJAcIZN0OwO0FURFJVhJp-adbIQrKAUjoRAiwrNf0m6d0cQ/exec'
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby2E7sOjlZ7Ea_A2NnXk-ziyYXjTvGh1ss6kPo2Legmk28CGsH7GfAdatyPmf-sGboP/exec'
 const token = new URLSearchParams(location.search).get('token')
+
+init()
 
 async function init() {
   await liff.init({ liffId: LIFF_ID })
@@ -25,24 +21,35 @@ async function init() {
     liff.login()
     return
   }
-  document.getElementById('status').innerText = '可編輯'
+
+  const profile = await liff.getProfile()
+
+  if (!token) {
+    document.getElementById('app').innerHTML =
+      `<h3>${profile.displayName}</h3><p>此為顯示模式</p>`
+    return
+  }
+
+  document.getElementById('app').innerHTML = `
+    <input id="name" value="${profile.displayName}">
+    <button onclick="save()">儲存</button>
+  `
 }
-init()
 
 async function save() {
   await fetch(GAS_API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      action: 'saveCard',
+      action:'saveCard',
       token,
-      card: {
-        header: {
-          name: name.value,
-          subtitle: subtitle.value,
-        },
-      },
-    }),
+      card:{
+        header:{
+          name:document.getElementById('name').value,
+          subtitle:'LINE 名片'
+        }
+      }
+    })
   })
   alert('已儲存')
   liff.closeWindow()
