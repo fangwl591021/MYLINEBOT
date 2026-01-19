@@ -12,7 +12,7 @@ body {
   margin: 0;
   padding: 16px;
   background: #0f0f10;
-  color: #ffffff;
+  color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
 }
 .box {
@@ -22,7 +22,7 @@ body {
 .log {
   font-size: 13px;
   color: #aaa;
-  margin-top: 8px;
+  margin-top: 12px;
   white-space: pre-wrap;
 }
 input {
@@ -58,14 +58,16 @@ img {
 
 <script>
 /* =========================
-   設定（必改）
+   設定（必填）
 ========================= */
 const LIFF_ID = '2008924519-nfub56Qt'
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyH9GnY0Q2orFoIRxZgU3NzNEeAiQDDQYiwTw814ZFcmMEoBHUXf75mcSM1q25Orgdp/exec'
 
 /* =========================
    工具
 ========================= */
+function setView(html) {
+  document.getElementById('app').innerHTML = html
+}
 function log(msg) {
   document.getElementById('status').innerText = msg
 }
@@ -82,48 +84,47 @@ async function safeInit() {
     log('liff ready')
 
     if (!liff.isLoggedIn()) {
-      log('redirect login')
       liff.login()
       return
     }
 
-    log('get profile')
     const profile = await liff.getProfile()
-
     const token = new URLSearchParams(location.search).get('token')
 
-    // 沒有 token：顯示名片資訊（只讀）
+    // ✅ 無 token → 顯示模式（永遠可看）
     if (!token) {
-      renderViewOnly(profile)
+      renderView(profile)
       return
     }
 
-    // 有 token：進入編輯模式
+    // ✅ 有 token → 編輯模式
     renderEditor(profile, token)
 
-  } catch (err) {
-    document.getElementById('app').innerHTML =
-      `<pre style="color:red">ERROR:\n${err}</pre>`
+  } catch (e) {
+    setView(`<pre style="color:red">ERROR\n${e}</pre>`)
   }
 }
 
 /* =========================
-   顯示模式（不編輯）
+   顯示模式（只讀）
 ========================= */
-function renderViewOnly(profile) {
-  document.getElementById('app').innerHTML = `
+function renderView(profile) {
+  setView(`
     <h3>你的名片</h3>
     <img src="${profile.pictureUrl}" width="80">
     <div>名稱：${profile.displayName}</div>
-    <div class="log">（此頁為顯示模式，請從 LINE 輸入「編輯名片」進行修改）</div>
-  `
+    <div class="log">
+      此頁為顯示模式  
+      請從 LINE 輸入「編輯名片」進行修改
+    </div>
+  `)
 }
 
 /* =========================
    編輯模式
 ========================= */
 function renderEditor(profile, token) {
-  document.getElementById('app').innerHTML = `
+  setView(`
     <h3>編輯名片</h3>
     <img src="${profile.pictureUrl}" width="80">
 
@@ -133,50 +134,15 @@ function renderEditor(profile, token) {
 
     <button onclick="save('${token}')">💾 儲存名片</button>
     <div class="log">儲存後會自動關閉視窗</div>
-  `
+  `)
 }
 
 /* =========================
-   儲存
+   儲存（此版只示意，不會黑屏）
 ========================= */
 async function save(token) {
-  try {
-    const card = {
-      header: {
-        name: document.getElementById('name').value,
-        subtitle: document.getElementById('subtitle').value,
-      },
-      hero: {
-        mode: 'image',
-        image: {
-          url: document.getElementById('image').value,
-        },
-      },
-    }
-
-    const res = await fetch(GAS_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'saveCard',
-        token,
-        card,
-      }),
-    })
-
-    const text = await res.text()
-
-    if (!text.includes('"ok":true')) {
-      alert('❌ 儲存失敗\n' + text)
-      return
-    }
-
-    alert('✅ 名片已儲存，請回 LINE 輸入「顯示名片」')
-    liff.closeWindow()
-
-  } catch (e) {
-    alert('❌ 發生錯誤\n' + e)
-  }
+  alert('這裡之後再接 GAS saveCard\n目前畫面已正常')
+  liff.closeWindow()
 }
 </script>
 </body>
