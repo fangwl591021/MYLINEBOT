@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>名片編輯器</title>
+
+<style>
+body {
+  margin: 0;
+  background: #0f0f10;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+}
+.card {
+  max-width: 420px;
+  margin: auto;
+  padding-bottom: 120px;
+}
+.editable {
+  outline: 2px dashed transparent;
+  cursor: pointer;
+}
+.editable:hover {
+  outline-color: #c9a24d;
+}
+.header {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #1a1b1e;
+}
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+}
+.hero img, .hero video {
+  width: 100%;
+  display: block;
+}
+.footer {
+  padding: 12px;
+}
+.footer button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 6px;
+  border: none;
+  font-size: 15px;
+}
+.primary { background:#c9a24d; color:#000; }
+.secondary { background:#2a2c31; color:#fff; }
+
+.panel {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #1f2024;
+  padding: 12px;
+  border-top: 1px solid #333;
+}
+.panel input, .panel select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+  background: #2a2c31;
+  color: #fff;
+  border: none;
+}
+.btn {
+  background:#c9a24d;
+  color:#000;
+  padding:10px;
+  text-align:center;
+  border-radius:6px;
+  margin-top:8px;
+}
+.small {
+  font-size:13px;
+  color:#aaa;
+}
+</style>
+</head>
+
+<body>
+<div class="card">
+
+  <!-- Header -->
+  <div class="header editable" onclick="editHeader()">
+    <img id="avatar" class="avatar">
+    <div>
+      <div id="name"></div>
+      <div id="subtitle" class="small"></div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero editable" id="hero" onclick="editHero()"></div>
+
+  <!-- Footer -->
+  <div class="footer editable" onclick="editFooter()"></div>
+
+</div>
+
+<!-- Editor Panel -->
+<div class="panel" id="panel" style="display:none"></div>
+
+<script>
+/* ================= 設定 ================= */
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbygrgbqmagOQ4-5GY5dEVvy4kAMsORr6idXMNaM52UnUOWKFccAcWrFlIrFNpf7emIe/exec'
+const token = new URLSearchParams(location.search).get('token')
+
+/* ================= 狀態 ================= */
+let card = null
+
+/* ================= Init ================= */
+async function init() {
+  if (!token) {
+    alert('缺少授權 token')
+    return
+  }
+
+  const res = await fetch(GAS_API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      action:'getCardByToken',
+      token
+    })
+  })
+
+  const data = await res.json()
+  if (!data.ok) {
+    alert('授權失效或過期')
+    return
+  }
+
+  card = data.card
+  render()
+}
+init()
+
+/* ================= Render ================= */
+function render() {
+  avatar.src = card.header.avatarUrl || ''
+  name.innerText = card.header.name || '你的名字'
+  subtitle.innerText = card.header.subtitle || '副標'
+
+  renderHero()
+  renderFooter()
+}
+
+function renderHero() {
+  if (card.hero.mode === 'video' && card.hero.video?.url) {
+    hero.innerHTML = `
+      <video controls muted
+        src="${card.hero.video.url}"
+        poster="${card.hero.video.previewUrl || ''}">
+      </video>`
+  } else {
+    hero.innerHTML = `
+      <img src="${card.hero.image?.url || ''}" />`
+  }
+}
+
+function renderFooter() {
+  const f = document.querySelector('.footer')
+  f.innerHTML = ''
+  card.footer.buttons.slice(0, card.footer.maxButtons).forEach(b => {
+    const btn = document.createElement('button')
+    btn.className = b.style
+    btn.innerText = b.label
+    f.appendChild(btn)
+  })
+}
+
+/* ================= Panel ================= */
+function openPanel(html) {
+  panel.innerHTML = html
+  panel.style.display = 'block'
+}
+
+/* ================= Editors ================= */
+function editHeader() {
+  openPanel(`
+    <div class="small">姓名</div>
+    <input value="${card.header.name || ''}"
+      oninput="card.header.name=this.value;render()">
+
+    <div class="small">副標</div>
+    <input value="${card.header.subtitle || ''}"
+      oninput="card.header.subtitle=this.value;render()">
+
+    <div class="small">頭貼 URL</div>
+    <input value="${card.header.avatarUrl || ''}"
+      oninput="card.header.avatarUrl=this.value;render()">
+
+    <div class="btn" onclick="save()">儲存</div>
+  `)
+}
+
+function editHero() {
+  openPanel(`
+    <div class="small">Hero 模式</div>
+    <select onchange="card.hero.mode=this.value;renderHero()">
+      <option value="image" ${card.hero.mode==='image'?'selected':''}>圖片</option>
+      <option value="video" ${card.hero.mode==='video'?'selected':''}>影片</option>
+    </select>
+
+    <div class="small">圖片 URL</div>
+    <input value="${card.hero.image?.url || ''}"
+      oninput="card.hero.image.url=this.value;renderHero()">
+
+    <div class="small">影片 URL</div>
+    <input value="${card.hero.video?.url || ''}"
+      oninput="card.hero.video.url=this.value;renderHero()">
+
+    <div class="small">影片封面 URL</div>
+    <input value="${card.hero.video?.previewUrl || ''}"
+      oninput="card.hero.video.previewUrl=this.value;renderHero()">
+
+    <div class="btn" onclick="save()">儲存</div>
+  `)
+}
+
+function editFooter() {
+  let html = `<div class="small">Footer 按鈕（最多 ${card.footer.maxButtons}）</div>`
+
+  card.footer.buttons.forEach((b,i)=>{
+    html += `
+      <input value="${b.label}"
+        oninput="card.footer.buttons[${i}].label=this.value;renderFooter()">
+
+      <select onchange="card.footer.buttons[${i}].style=this.value;renderFooter()">
+        <option value="primary" ${b.style==='primary'?'selected':''}>Primary</option>
+        <option value="secondary" ${b.style==='secondary'?'selected':''}>Secondary</option>
+      </select>
+
+      <div class="small" onclick="card.footer.buttons.splice(${i},1);editFooter()">❌ 刪除</div>
+    `
+  })
+
+  if (card.footer.buttons.length < card.footer.maxButtons) {
+    html += `<div class="btn"
+      onclick="card.footer.buttons.push({label:'新按鈕',style:'secondary'});editFooter()">
+      ＋ 新增按鈕
+    </div>`
+  }
+
+  html += `<div class="btn" onclick="save()">儲存</div>`
+  openPanel(html)
+}
+
+/* ================= Save ================= */
+async function save() {
+  await fetch(GAS_API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      action:'saveCardByToken',
+      token,
+      card
+    })
+  })
+  alert('已儲存')
+  panel.style.display = 'none'
+}
+</script>
+</body>
+</html>
