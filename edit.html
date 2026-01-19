@@ -2,143 +2,65 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>名片編輯器</title>
-<style>
-body{margin:0;background:#0f0f10;color:#fff;font-family:"Noto Sans TC",sans-serif}
-.card{max-width:420px;margin:auto;padding-bottom:120px}
-.editable{outline:2px dashed transparent;cursor:pointer}
-.editable:hover{outline-color:#c9a24d}
-.header{display:flex;gap:12px;padding:12px;background:#1a1b1e}
-.avatar{width:48px;height:48px;border-radius:8px}
-.hero img,.hero video{width:100%}
-.footer{padding:12px}
-.footer button{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:none}
-.primary{background:#c9a24d;color:#000}
-.secondary{background:#2a2c31;color:#fff}
-.panel{position:fixed;bottom:0;left:0;right:0;background:#1f2024;padding:12px}
-.panel input,.panel select{width:100%;padding:8px;margin-top:6px;background:#2a2c31;color:#fff;border:none}
-.btn{background:#c9a24d;color:#000;padding:10px;text-align:center;border-radius:6px;margin-top:8px}
-.small{font-size:13px;color:#aaa}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
+
 <body>
-
-<div class="card">
-  <div class="header editable" onclick="editHeader()">
-    <img id="avatar" class="avatar">
-    <div>
-      <div id="name"></div>
-      <div id="subtitle" class="small"></div>
-    </div>
-  </div>
-
-  <div class="hero editable" id="hero" onclick="editHero()"></div>
-  <div class="footer editable" onclick="editFooter()"></div>
-</div>
-
-<div class="panel" id="panel" style="display:none"></div>
+<h3>名片編輯器</h3>
+<input id="name" placeholder="名稱"><br><br>
+<input id="subtitle" placeholder="副標"><br><br>
+<input id="image" placeholder="主圖 URL"><br><br>
+<button onclick="save()">儲存名片</button>
 
 <script>
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxzj5VfFjsAzyGDh_hx0HJISw53GwVdMcIC6HPp73qVz-E6xKbvzsIgu8sQBN8szlCt/exec'
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxUk3hZcUHSROrzVTje-kZMQHB8jQezr6vDt6YDPebOqXbjsdbzDETj99Ed9pzxrSXN/exec'
+const LIFF_ID = '2008924519-PkufAIve'
 const token = new URLSearchParams(location.search).get('token')
-let card
 
-async function init(){
-  const res = await fetch(GAS_API_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:'getCardByToken',token})
-  })
-  const data = await res.json()
-  card = data.card
-  render()
+let profile = {}
+
+async function init() {
+  await liff.init({ liffId: LIFF_ID })
+  if (!liff.isLoggedIn()) {
+    liff.login()
+    return
+  }
+  profile = await liff.getProfile()
 }
 init()
 
-function render(){
-  avatar.src = card.header.avatarUrl||''
-  name.innerText = card.header.name||'你的名字'
-  subtitle.innerText = card.header.subtitle||''
-  renderHero()
-  renderFooter()
-}
-
-function renderHero(){
-  hero.innerHTML =
-    card.hero.mode==='video'
-    ? `<video controls src="${card.hero.video.url}" poster="${card.hero.video.previewUrl||''}"></video>`
-    : `<img src="${card.hero.image.url||''}">`
-}
-
-function renderFooter(){
-  const f=document.querySelector('.footer')
-  f.innerHTML=''
-  card.footer.buttons.forEach(b=>{
-    const btn=document.createElement('button')
-    btn.className=b.style
-    btn.innerText=b.label
-    f.appendChild(btn)
-  })
-}
-
-function openPanel(html){
-  panel.innerHTML=html
-  panel.style.display='block'
-}
-
-function editHeader(){
-  openPanel(`
-    <div class="small">姓名</div>
-    <input value="${card.header.name}" oninput="card.header.name=this.value;render()">
-    <div class="small">副標</div>
-    <input value="${card.header.subtitle}" oninput="card.header.subtitle=this.value;render()">
-    <div class="small">頭貼 URL</div>
-    <input value="${card.header.avatarUrl}" oninput="card.header.avatarUrl=this.value;render()">
-    <div class="btn" onclick="save()">儲存</div>
-  `)
-}
-
-function editHero(){
-  openPanel(`
-    <select onchange="card.hero.mode=this.value;renderHero()">
-      <option value="image">圖片</option>
-      <option value="video">影片</option>
-    </select>
-    <input placeholder="圖片 URL" oninput="card.hero.image.url=this.value;renderHero()">
-    <input placeholder="影片 URL" oninput="card.hero.video.url=this.value;renderHero()">
-    <input placeholder="封面 URL" oninput="card.hero.video.previewUrl=this.value;renderHero()">
-    <div class="btn" onclick="save()">儲存</div>
-  `)
-}
-
-function editFooter(){
-  let html=''
-  card.footer.buttons.forEach((b,i)=>{
-    html+=`
-      <input value="${b.label}" oninput="card.footer.buttons[${i}].label=this.value;renderFooter()">
-      <select onchange="card.footer.buttons[${i}].style=this.value;renderFooter()">
-        <option value="primary">Primary</option>
-        <option value="secondary">Secondary</option>
-      </select>
-      <div class="small" onclick="card.footer.buttons.splice(${i},1);editFooter()">刪除</div>
-    `
-  })
-  if(card.footer.buttons.length<5){
-    html+=`<div class="btn" onclick="card.footer.buttons.push({label:'新按鈕',style:'secondary'});editFooter()">新增按鈕</div>`
+async function save() {
+  const card = {
+    displayName: profile.displayName,
+    pictureUrl: profile.pictureUrl,
+    header: {
+      avatarUrl: profile.pictureUrl,
+      name: name.value,
+      subtitle: subtitle.value,
+    },
+    hero: {
+      mode: 'image',
+      image: { url: image.value },
+    },
+    footer: {
+      maxButtons: 2,
+      buttons: [],
+    },
   }
-  html+=`<div class="btn" onclick="save()">儲存</div>`
-  openPanel(html)
-}
 
-async function save(){
-  await fetch(GAS_API_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:'saveCardByToken',token,card})
+  await fetch(GAS_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'saveCard',
+      token,
+      card,
+    }),
   })
-  alert('已儲存並發送到 LINE')
-  panel.style.display='none'
+
+  alert('✅ 名片已儲存，回 LINE 輸入「顯示名片」')
 }
 </script>
 </body>
