@@ -4,53 +4,180 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>名片編輯器</title>
+
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
 <style>
 body {
-  background:#0f0f10;
-  color:#fff;
-  font-family:sans-serif;
-  padding:16px;
+  margin: 0;
+  padding: 16px;
+  background: #0f0f10;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+}
+.box {
+  max-width: 420px;
+  margin: auto;
+}
+.log {
+  font-size: 13px;
+  color: #aaa;
+  margin-top: 8px;
+  white-space: pre-wrap;
+}
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: none;
+  background: #2a2c31;
+  color: #fff;
+}
+button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #c9a24d;
+  color: #000;
+  font-size: 16px;
+}
+img {
+  border-radius: 12px;
+  margin-top: 12px;
 }
 </style>
 </head>
 
 <body>
-<div id="app">INIT...</div>
+<div class="box" id="app">
+  <div id="status">INIT...</div>
+</div>
 
 <script>
-const LIFF_ID = '2008924519-PkufAIve'
+/* =========================
+   設定（必改）
+========================= */
+const LIFF_ID = '2008924519-nfub56Qt'
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyH9GnY0Q2orFoIRxZgU3NzNEeAiQDDQYiwTw814ZFcmMEoBHUXf75mcSM1q25Orgdp/exec'
-const token = new URLSearchParams(location.search).get('token')
+
+/* =========================
+   工具
+========================= */
+function log(msg) {
+  document.getElementById('status').innerText = msg
+}
+
+/* =========================
+   主流程
+========================= */
+safeInit()
 
 async function safeInit() {
   try {
-    document.getElementById('app').innerText = 'call liff.init'
+    log('call liff.init')
     await liff.init({ liffId: LIFF_ID })
-
-    document.getElementById('app').innerText = 'liff ready'
+    log('liff ready')
 
     if (!liff.isLoggedIn()) {
+      log('redirect login')
       liff.login()
       return
     }
 
-    document.getElementById('app').innerText = 'get profile'
+    log('get profile')
     const profile = await liff.getProfile()
 
-    document.getElementById('app').innerHTML = `
-      <h3>LIFF 正常</h3>
-      <div>名稱：${profile.displayName}</div>
-      <img src="${profile.pictureUrl}" width="80">
-      <div>token：${token || 'none'}</div>
-    `
+    const token = new URLSearchParams(location.search).get('token')
+
+    // 沒有 token：顯示名片資訊（只讀）
+    if (!token) {
+      renderViewOnly(profile)
+      return
+    }
+
+    // 有 token：進入編輯模式
+    renderEditor(profile, token)
+
   } catch (err) {
     document.getElementById('app').innerHTML =
-      '<pre style="color:red">' + err + '</pre>'
+      `<pre style="color:red">ERROR:\n${err}</pre>`
   }
 }
 
-safeInit()
+/* =========================
+   顯示模式（不編輯）
+========================= */
+function renderViewOnly(profile) {
+  document.getElementById('app').innerHTML = `
+    <h3>你的名片</h3>
+    <img src="${profile.pictureUrl}" width="80">
+    <div>名稱：${profile.displayName}</div>
+    <div class="log">（此頁為顯示模式，請從 LINE 輸入「編輯名片」進行修改）</div>
+  `
+}
+
+/* =========================
+   編輯模式
+========================= */
+function renderEditor(profile, token) {
+  document.getElementById('app').innerHTML = `
+    <h3>編輯名片</h3>
+    <img src="${profile.pictureUrl}" width="80">
+
+    <input id="name" placeholder="名稱" value="${profile.displayName}">
+    <input id="subtitle" placeholder="副標">
+    <input id="image" placeholder="主圖 URL">
+
+    <button onclick="save('${token}')">💾 儲存名片</button>
+    <div class="log">儲存後會自動關閉視窗</div>
+  `
+}
+
+/* =========================
+   儲存
+========================= */
+async function save(token) {
+  try {
+    const card = {
+      header: {
+        name: document.getElementById('name').value,
+        subtitle: document.getElementById('subtitle').value,
+      },
+      hero: {
+        mode: 'image',
+        image: {
+          url: document.getElementById('image').value,
+        },
+      },
+    }
+
+    const res = await fetch(GAS_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'saveCard',
+        token,
+        card,
+      }),
+    })
+
+    const text = await res.text()
+
+    if (!text.includes('"ok":true')) {
+      alert('❌ 儲存失敗\n' + text)
+      return
+    }
+
+    alert('✅ 名片已儲存，請回 LINE 輸入「顯示名片」')
+    liff.closeWindow()
+
+  } catch (e) {
+    alert('❌ 發生錯誤\n' + e)
+  }
+}
 </script>
 </body>
 </html>
