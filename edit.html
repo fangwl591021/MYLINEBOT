@@ -58,9 +58,9 @@ img {
 
 <script>
 /* =========================
-   設定（必填）
+   設定（確認過可用）
 ========================= */
-const LIFF_ID = '2008924519-nfub56Qt'
+const LIFF_ID = '2008924519-PkufAIve'  // ✅ 請務必用這個
 
 /* =========================
    工具
@@ -83,21 +83,22 @@ async function safeInit() {
     await liff.init({ liffId: LIFF_ID })
     log('liff ready')
 
+    // ⚠️ LINE App 內通常已登入，不強制 login
     if (!liff.isLoggedIn()) {
-      liff.login()
+      log('not logged in')
       return
     }
 
     const profile = await liff.getProfile()
     const token = new URLSearchParams(location.search).get('token')
 
-    // ✅ 無 token → 顯示模式（永遠可看）
+    // 無 token：顯示模式
     if (!token) {
       renderView(profile)
       return
     }
 
-    // ✅ 有 token → 編輯模式
+    // 有 token：編輯模式
     renderEditor(profile, token)
 
   } catch (e) {
@@ -138,10 +139,10 @@ function renderEditor(profile, token) {
 }
 
 /* =========================
-   儲存（此版只示意，不會黑屏）
+   儲存（下一步再接 GAS）
 ========================= */
 async function save(token) {
-  alert('這裡之後再接 GAS saveCard\n目前畫面已正常')
+  alert('畫面與 LIFF 已確認正常\n下一步再接 GAS saveCard')
   liff.closeWindow()
 }
 </script>
