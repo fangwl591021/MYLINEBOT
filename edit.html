@@ -6,21 +6,38 @@
     <title>個人名片編輯器</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { margin: 0; background: #0f0f10; color: #fff; font-family: -apple-system, sans-serif; padding-bottom: 40px; }
+        body { margin: 0; background: #0f0f10; color: #fff; font-family: -apple-system, sans-serif; padding-bottom: 60px; }
         .wrap { max-width: 440px; margin: 0 auto; padding: 16px; }
-        .card-preview { border-radius: 14px; overflow: hidden; background: #111; border: 1px solid #333; margin-bottom: 20px; }
-        .hdr { display: flex; gap: 12px; padding: 15px; align-items: center; }
+        
+        /* 預覽區樣式 */
+        .card-preview { border-radius: 14px; overflow: hidden; background: #111; border: 1px solid #333; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .hdr { display: flex; gap: 12px; padding: 15px; align-items: center; transition: background 0.3s; }
         .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #d4af37; }
         .name { font-size: 18px; font-weight: bold; color: #d4af37; }
         .sub { font-size: 13px; color: #ccc; }
         .hero-box { width: 100%; min-height: 150px; background: #222; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .hero-box img, .hero-box video { width: 100%; display: block; }
         
+        /* Actions 預覽 */
+        .actions-preview { display: flex; justify-content: space-around; padding: 10px; background: #1a1b1e; border-top: 1px solid #333; }
+        .action-item { text-align: center; font-size: 10px; color: #aaa; }
+        .action-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
+        /* Footer 預覽 */
+        .footer-preview { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .f-btn-p { background: #c9a24d; color: #000; text-align: center; padding: 8px; border-radius: 6px; font-size: 14px; font-weight: bold; }
+        .f-btn-s { background: #333; color: #fff; text-align: center; padding: 8px; border-radius: 6px; font-size: 14px; }
+
+        /* 表單樣式 */
+        .section-title { font-size: 16px; font-weight: bold; color: #d4af37; margin: 20px 0 10px; border-left: 4px solid #d4af37; padding-left: 8px; }
         .form-group { background: #1a1b1e; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #222; }
         label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
         input, select, textarea { width: 100%; box-sizing: border-box; padding: 10px; background: #2a2c31; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+        input[type="color"] { height: 40px; padding: 2px; }
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
         
-        .btn { width: 100%; padding: 12px; border-radius: 10px; border: 0; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn { width: 100%; padding: 14px; border-radius: 10px; border: 0; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary { background: #c9a24d; color: #000; margin-top: 10px; }
         .btn-secondary { background: #333; color: #fff; margin-top: 8px; }
         .loading { text-align: center; padding: 50px; color: #888; }
@@ -45,7 +62,6 @@ async function init() {
     try {
         await liff.init({ liffId: LIFF_ID });
         if (!liff.isLoggedIn()) { liff.login(); return; }
-        
         state.profile = await liff.getProfile();
         
         if (!state.token) {
@@ -60,7 +76,7 @@ async function init() {
         });
 
         if (!res.ok) {
-            renderViewOnly(res.msg || "授權過期");
+            renderViewOnly(res.msg || "授權已過期，請重新輸入「編輯名片」");
             return;
         }
 
@@ -90,31 +106,55 @@ function renderViewOnly(msg) {
 
 function renderEditor() {
     const c = state.card;
+    // 預設值補完
+    c.header = c.header || {};
+    c.actions = c.actions || [{}, {}];
+    c.footer = c.footer || { buttons: [] };
+
     document.getElementById("app").innerHTML = `
         <div class="card-preview">
-            <div class="hdr" style="background:${c.header.bgColor}">
-                <img src="${c.header.avatarUrl || state.profile.pictureUrl}" class="avatar">
+            <div id="pv_hdr" class="hdr" style="background:${c.header.bgColor || '#1A1B1E'}">
+                <img id="pv_avatar" src="${c.header.avatarUrl || state.profile.pictureUrl}" class="avatar">
                 <div>
-                    <div class="name">${c.header.name || state.profile.displayName}</div>
-                    <div class="sub">${c.header.subtitle}</div>
+                    <div id="pv_name" class="name">${c.header.name || state.profile.displayName}</div>
+                    <div id="pv_sub" class="sub">${c.header.subtitle || '職稱'}</div>
                 </div>
             </div>
-            <div class="hero-box" id="previewHero">
+            <div class="hero-box" id="pv_hero">
                 ${renderHeroHTML(c.hero)}
+            </div>
+            <div class="actions-preview">
+                <div class="action-item"><span class="action-icon" id="pv_a1_i">${c.actions[0]?.icon || '💬'}</span><span id="pv_a1_l">${c.actions[0]?.label || '諮詢'}</span></div>
+                <div class="action-item"><span class="action-icon" id="pv_a2_i">${c.actions[1]?.icon || '🔗'}</span><span id="pv_a2_l">${c.actions[1]?.label || '官網'}</span></div>
+            </div>
+            <div class="footer-preview" id="pv_footer">
+                ${renderFooterPreviewHTML(c.footer.buttons)}
             </div>
         </div>
 
+        <div class="section-title">頂部個人資料</div>
         <div class="form-group">
             <label>顯示名稱</label>
-            <input type="text" id="f_name" value="${c.header.name || state.profile.displayName}">
+            <input type="text" id="f_name" value="${c.header.name || state.profile.displayName}" oninput="syncPreview()">
             <label>職稱 / 副標題</label>
-            <input type="text" id="f_sub" value="${c.header.subtitle}">
-            <label>個人簡介</label>
-            <textarea id="f_desc" rows="2">${c.header.description || ""}</textarea>
+            <input type="text" id="f_sub" value="${c.header.subtitle || ""}" oninput="syncPreview()">
+            <label>個人簡介 (Description)</label>
+            <textarea id="f_desc" rows="2" oninput="syncPreview()">${c.header.description || ""}</textarea>
+            <div class="row">
+                <div>
+                    <label>背景顏色</label>
+                    <input type="color" id="f_bgcolor" value="${c.header.bgColor || '#1A1B1E'}" oninput="syncPreview()">
+                </div>
+                <div>
+                    <label>頭像連結 (留空則用 LINE)</label>
+                    <input type="text" id="f_avatar" value="${c.header.avatarUrl || ""}" oninput="syncPreview()">
+                </div>
+            </div>
         </div>
 
+        <div class="section-title">主視覺設定 (Hero)</div>
         <div class="form-group">
-            <label>主視覺模式</label>
+            <label>顯示模式</label>
             <select id="f_mode" onchange="updateHeroFields()">
                 <option value="image" ${c.hero.mode === 'image' ? 'selected' : ''}>圖片模式</option>
                 <option value="video" ${c.hero.mode === 'video' ? 'selected' : ''}>影片模式</option>
@@ -122,17 +162,50 @@ function renderEditor() {
             <div id="hero_inputs"></div>
         </div>
 
+        <div class="section-title">快速動作 (Actions)</div>
         <div class="form-group">
-            <label>按鈕 1 文字 (不填則隱藏)</label>
-            <input type="text" id="fb_l1" value="${c.footer.buttons[0]?.label || ""}">
-            <label>按鈕 1 連結</label>
-            <input type="text" id="fb_u1" value="${c.footer.buttons[0]?.uri || ""}">
+            <label>動作 1 (圖示 / 文字 / 連結)</label>
+            <div class="row">
+                <input style="flex:0.3" type="text" id="fa1_icon" value="${c.actions[0]?.icon || '💬'}" oninput="syncPreview()">
+                <input type="text" id="fa1_label" value="${c.actions[0]?.label || '諮詢'}" oninput="syncPreview()">
+            </div>
+            <input type="text" id="fa1_val" value="${c.actions[0]?.value || ""}" placeholder="https://...">
+
+            <label>動作 2</label>
+            <div class="row">
+                <input style="flex:0.3" type="text" id="fa2_icon" value="${c.actions[1]?.icon || '🔗'}" oninput="syncPreview()">
+                <input type="text" id="fa2_label" value="${c.actions[1]?.label || '官網'}" oninput="syncPreview()">
+            </div>
+            <input type="text" id="fa2_val" value="${c.actions[1]?.value || ""}" placeholder="https://...">
         </div>
 
-        <button class="btn btn-primary" onclick="save()">儲存並預覽</button>
+        <div class="section-title">底部按鈕 (Footer)</div>
+        <div class="form-group">
+            <label>按鈕 1 (文字 / 連結 / 樣式)</label>
+            <div class="row">
+                <input type="text" id="fb1_l" value="${c.footer.buttons[0]?.label || ""}" oninput="syncPreview()">
+                <select id="fb1_s" onchange="syncPreview()">
+                    <option value="primary" ${c.footer.buttons[0]?.style==='primary'?'selected':''}>金色</option>
+                    <option value="secondary" ${c.footer.buttons[0]?.style==='secondary'?'selected':''}>深灰</option>
+                </select>
+            </div>
+            <input type="text" id="fb1_u" value="${c.footer.buttons[0]?.uri || ""}" placeholder="https://...">
+
+            <label>按鈕 2</label>
+            <div class="row">
+                <input type="text" id="fb2_l" value="${c.footer.buttons[1]?.label || ""}" oninput="syncPreview()">
+                <select id="fb2_s" onchange="syncPreview()">
+                    <option value="primary" ${c.footer.buttons[1]?.style==='primary'?'selected':''}>金色</option>
+                    <option value="secondary" ${c.footer.buttons[1]?.style==='secondary'?'selected':''}>深灰</option>
+                </select>
+            </div>
+            <input type="text" id="fb2_u" value="${c.footer.buttons[1]?.uri || ""}" placeholder="https://...">
+        </div>
+
+        <button class="btn btn-primary" onclick="save()">儲存並預覽名片</button>
         <button class="btn btn-secondary" onclick="liff.closeWindow()">取消退出</button>
     `;
-    updateHeroFields(true);
+    updateHeroFields();
 }
 
 function renderHeroHTML(hero) {
@@ -140,27 +213,49 @@ function renderHeroHTML(hero) {
         return `<video src="${hero.video.url}" poster="${hero.video.previewUrl}" controls playsinline></video>`;
     }
     if (hero.image.url) return `<img src="${hero.image.url}">`;
-    return `<span style="color:#444">尚未設定主圖片/影片</span>`;
+    return `<span style="color:#444; padding:20px; text-align:center">尚未上傳主視覺</span>`;
 }
 
-function updateHeroFields(isInit = false) {
+function renderFooterPreviewHTML(buttons) {
+    return buttons.map(b => b.label ? `<div class="${b.style === 'primary' ? 'f-btn-p' : 'f-btn-s'}">${b.label}</div>` : '').join('');
+}
+
+function updateHeroFields() {
     const mode = document.getElementById("f_mode").value;
     const container = document.getElementById("hero_inputs");
     const c = state.card;
 
     if (mode === "image") {
         container.innerHTML = `
-            <label>圖片 URL (建議 16:9)</label>
-            <input type="text" id="f_img" value="${c.hero.image.url || ""}" placeholder="https://...">
+            <label>圖片 URL</label>
+            <input type="text" id="f_img" value="${c.hero.image.url || ""}" oninput="syncPreview()">
         `;
     } else {
         container.innerHTML = `
-            <label>影片 URL (.mp4)</label>
-            <input type="text" id="f_vurl" value="${c.hero.video.url || ""}" placeholder="https://...">
-            <label>影片封面圖 URL</label>
-            <input type="text" id="f_vpre" value="${c.hero.video.previewUrl || ""}" placeholder="https://...">
+            <label>影片連結 (.mp4)</label>
+            <input type="text" id="f_vurl" value="${c.hero.video.url || ""}" oninput="syncPreview()">
+            <label>影片封面圖</label>
+            <input type="text" id="f_vpre" value="${c.hero.video.previewUrl || ""}" oninput="syncPreview()">
         `;
     }
+    syncPreview();
+}
+
+function syncPreview() {
+    document.getElementById("pv_hdr").style.background = document.getElementById("f_bgcolor").value;
+    document.getElementById("pv_name").innerText = document.getElementById("f_name").value || state.profile.displayName;
+    document.getElementById("pv_sub").innerText = document.getElementById("f_sub").value || " ";
+    document.getElementById("pv_avatar").src = document.getElementById("f_avatar").value || state.profile.pictureUrl;
+    
+    document.getElementById("pv_a1_i").innerText = document.getElementById("fa1_icon").value;
+    document.getElementById("pv_a1_l").innerText = document.getElementById("fa1_label").value;
+    document.getElementById("pv_a2_i").innerText = document.getElementById("fa2_icon").value;
+    document.getElementById("pv_a2_l").innerText = document.getElementById("fa2_label").value;
+
+    const btns = [];
+    if(document.getElementById("fb1_l").value) btns.push({ label: document.getElementById("fb1_l").value, style: document.getElementById("fb1_s").value });
+    if(document.getElementById("fb2_l").value) btns.push({ label: document.getElementById("fb2_l").value, style: document.getElementById("fb2_s").value });
+    document.getElementById("pv_footer").innerHTML = renderFooterPreviewHTML(btns);
 }
 
 async function save() {
@@ -172,7 +267,9 @@ async function save() {
         header: {
             name: document.getElementById("f_name").value,
             subtitle: document.getElementById("f_sub").value,
-            description: document.getElementById("f_desc").value
+            description: document.getElementById("f_desc").value,
+            avatarUrl: document.getElementById("f_avatar").value,
+            bgColor: document.getElementById("f_bgcolor").value
         },
         hero: {
             mode: document.getElementById("f_mode").value,
@@ -182,13 +279,14 @@ async function save() {
                 previewUrl: document.getElementById("f_vpre")?.value || "" 
             }
         },
+        actions: [
+            { icon: document.getElementById("fa1_icon").value, label: document.getElementById("fa1_label").value, type: "uri", value: document.getElementById("fa1_val").value },
+            { icon: document.getElementById("fa2_icon").value, label: document.getElementById("fa2_label").value, type: "uri", value: document.getElementById("fa2_val").value }
+        ],
         footer: {
             buttons: [
-                { 
-                    label: document.getElementById("fb_l1").value, 
-                    uri: document.getElementById("fb_u1").value,
-                    style: "primary"
-                }
+                { label: document.getElementById("fb1_l").value, uri: document.getElementById("fb1_u").value, style: document.getElementById("fb1_s").value },
+                { label: document.getElementById("fb2_l").value, uri: document.getElementById("fb2_u").value, style: document.getElementById("fb2_s").value }
             ]
         }
     };
@@ -201,7 +299,7 @@ async function save() {
     });
 
     if (res.ok) {
-        alert("儲存成功！");
+        alert("名片儲存成功！");
         liff.closeWindow();
     } else {
         alert("儲存失敗: " + res.msg);
