@@ -1,58 +1,352 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<title>名片編輯</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>名片編輯器</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  body{margin:0;background:#0f0f10;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif}
+  .wrap{max-width:440px;margin:0 auto;padding:16px}
+  .card{border:1px solid #222;border-radius:14px;overflow:hidden;background:#111}
+  .hdr{display:flex;gap:12px;padding:12px;background:#1a1b1e;align-items:center}
+  .avatar{width:56px;height:56px;border-radius:12px;object-fit:cover;background:#222}
+  .name{font-size:20px;font-weight:800;color:#d4af37}
+  .sub{font-size:13px;color:#e6e6e6;margin-top:4px}
+  .desc{font-size:12px;color:#a0a0a0;margin-top:4px;white-space:pre-wrap}
+  .hero img,.hero video{width:100%;display:block;background:#111}
+  .btn{width:100%;padding:12px;border-radius:10px;border:0;font-size:16px;margin-top:12px;cursor:pointer}
+  .primary{background:#c9a24d;color:#000;font-weight:700}
+  .secondary{background:#2a2c31;color:#fff}
+  .panel{margin-top:12px;border:1px solid #222;border-radius:14px;padding:12px;background:#121316}
+  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #222;background:#2a2c31;color:#fff;margin-top:8px}
+  .row{display:flex;gap:10px}
+  .row > *{flex:1}
+  .muted{font-size:12px;color:#9aa0a6;margin-top:8px}
+  .title{font-size:16px;font-weight:700;margin:0 0 8px}
+  .hr{height:1px;background:#222;margin:12px 0}
+</style>
 </head>
 <body>
-<div id="app">INIT...</div>
+<div class="wrap">
+  <div id="status" class="muted">INIT...</div>
+  <div id="app"></div>
+</div>
 
 <script>
-const LIFF_ID = '2008924519-PkufAIve'
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby2E7sOjlZ7Ea_A2NnXk-ziyYXjTvGh1ss6kPo2Legmk28CGsH7GfAdatyPmf-sGboP/exec'
-const token = new URLSearchParams(location.search).get('token')
+/* ========= 必改 ========= */
+const LIFF_ID = "2008924519-PkufAIve"; // 你的 LIFF
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwvbyc1vsLxEx1LBRQ7xUtmaH-3GVHKwQZsH0uPfrN122bHL_ICP3ov8AX8aKtZJSTc/exec"; // 你的 GAS WebApp
 
-init()
+/* ========= state ========= */
+let profile = null;
+let token = new URLSearchParams(location.search).get("token");
+let card = null;
+let editing = false;
 
-async function init() {
-  await liff.init({ liffId: LIFF_ID })
-  if (!liff.isLoggedIn()) {
-    liff.login()
-    return
+boot();
+
+async function boot(){
+  try{
+    setStatus("call liff.init");
+    await liff.init({ liffId: LIFF_ID });
+    setStatus("liff ready");
+
+    if(!liff.isLoggedIn()){
+      setStatus("not logged in -> liff.login");
+      liff.login();
+      return;
+    }
+
+    profile = await liff.getProfile();
+    setStatus(`hello ${profile.displayName}`);
+
+    // ✅ 無 token：只做預覽（符合你 1/2 的邏輯，不進編輯）
+    if(!token){
+      card = buildPublicCardFromProfile(profile); // 公版：LOGO+姓名
+      renderViewOnly(card);
+      return;
+    }
+
+    // ✅ 有 token：讀取可編輯卡片（token 必須對應此 user）
+    const data = await gasCall({
+      action: "getCardByToken",
+      token,
+      userId: profile.userId
+    });
+
+    if(!data.ok){
+      renderError(data.msg || "缺少授權 token");
+      return;
+    }
+
+    card = data.card;
+
+    // 保證公版核心（LOGO+姓名）
+    card.header = card.header || {};
+    card.header.avatarUrl = card.header.avatarUrl || profile.pictureUrl;
+    card.header.name = card.header.name || profile.displayName;
+
+    renderPreview(card);
+
+  }catch(err){
+    renderError(String(err));
   }
-
-  const profile = await liff.getProfile()
-
-  if (!token) {
-    document.getElementById('app').innerHTML =
-      `<h3>${profile.displayName}</h3><p>此為顯示模式</p>`
-    return
-  }
-
-  document.getElementById('app').innerHTML = `
-    <input id="name" value="${profile.displayName}">
-    <button onclick="save()">儲存</button>
-  `
 }
 
-async function save() {
-  await fetch(GAS_API_URL, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      action:'saveCard',
-      token,
-      card:{
-        header:{
-          name:document.getElementById('name').value,
-          subtitle:'LINE 名片'
-        }
-      }
-    })
-  })
-  alert('已儲存')
-  liff.closeWindow()
+/* ========= 渲染 ========= */
+function renderViewOnly(c){
+  document.getElementById("app").innerHTML = `
+    <div class="card">
+      ${headerHTML(c)}
+      ${heroHTML(c)}
+    </div>
+    <button class="btn secondary" onclick="closeMe()">回 LINE</button>
+    <div class="muted">此為顯示模式。請回到 LINE 輸入「編輯名片」才能修改。</div>
+  `;
+}
+function renderPreview(c){
+  document.getElementById("app").innerHTML = `
+    <div class="card">
+      ${headerHTML(c)}
+      ${heroHTML(c)}
+    </div>
+
+    <button class="btn primary" onclick="toggleEdit(true)">開始編輯</button>
+    <button class="btn secondary" onclick="closeMe()">先不改，回 LINE</button>
+    <div class="muted">你規格第 3 點：只有「儲存」後才算完成個人化。</div>
+
+    <div id="editor"></div>
+  `;
+  if(editing) renderEditor();
+}
+function renderEditor(){
+  const e = document.getElementById("editor");
+  if(!e) return;
+
+  // 確保結構
+  card.header = card.header || {};
+  card.hero = card.hero || { mode:"image", image:{url:""}, video:{url:"",previewUrl:""} };
+  card.footer = card.footer || { maxButtons:5, buttons:[] };
+  card.footer.maxButtons = 5;
+  card.footer.buttons = (card.footer.buttons || []).slice(0,5);
+
+  e.innerHTML = `
+    <div class="panel">
+      <p class="title">編輯欄位</p>
+
+      <div class="row">
+        <div>
+          <div class="muted">名稱（預設用 LINE 名稱）</div>
+          <input id="f_name" value="${escapeHTML(card.header.name||"")}" />
+        </div>
+        <div>
+          <div class="muted">副標</div>
+          <input id="f_sub" value="${escapeHTML(card.header.subtitle||"")}" />
+        </div>
+      </div>
+
+      <div class="muted">描述</div>
+      <input id="f_desc" value="${escapeHTML(card.header.description||"")}" />
+
+      <div class="hr"></div>
+
+      <div class="muted">主視覺模式（圖片 / 影片）</div>
+      <select id="f_mode" onchange="onModeChange()">
+        <option value="image" ${card.hero.mode==="image"?"selected":""}>圖片模式</option>
+        <option value="video" ${card.hero.mode==="video"?"selected":""}>影片模式</option>
+      </select>
+
+      <div id="heroFields"></div>
+
+      <div class="hr"></div>
+
+      <div class="muted">Footer 按鈕（最多 5）</div>
+      <div id="footerFields"></div>
+
+      <button class="btn primary" onclick="save()">儲存</button>
+      <button class="btn secondary" onclick="toggleEdit(false)">收起編輯</button>
+      <div class="muted">儲存後會回到 LINE，你再輸入「顯示名片」就會看到個人化。</div>
+    </div>
+  `;
+
+  renderHeroFields();
+  renderFooterFields();
+}
+
+function headerHTML(c){
+  const avatar = c.header?.avatarUrl || profile?.pictureUrl || "";
+  const name = c.header?.name || profile?.displayName || "未命名";
+  const sub = c.header?.subtitle || "LINE 行銷顧問";
+  const desc = c.header?.description || "";
+  return `
+    <div class="hdr">
+      <img class="avatar" src="${escapeHTML(avatar)}" />
+      <div>
+        <div class="name">${escapeHTML(name)}</div>
+        <div class="sub">${escapeHTML(sub)}</div>
+        ${desc ? `<div class="desc">${escapeHTML(desc)}</div>` : ``}
+      </div>
+    </div>
+  `;
+}
+function heroHTML(c){
+  const mode = c.hero?.mode || "image";
+  if(mode==="video" && c.hero?.video?.url){
+    const poster = c.hero.video.previewUrl || "";
+    return `<div class="hero"><video controls playsinline webkit-playsinline preload="metadata" src="${escapeHTML(c.hero.video.url)}" poster="${escapeHTML(poster)}"></video></div>`;
+  }
+  const img = c.hero?.image?.url || "";
+  return `<div class="hero">${img ? `<img src="${escapeHTML(img)}" />` : `<div style="padding:22px;color:#aaa">（尚未設定主圖）</div>`}</div>`;
+}
+
+function renderHeroFields(){
+  const box = document.getElementById("heroFields");
+  if(!box) return;
+
+  const mode = document.getElementById("f_mode").value;
+  if(mode==="image"){
+    box.innerHTML = `
+      <div class="muted">圖片 URL</div>
+      <input id="f_img" value="${escapeHTML(card.hero?.image?.url||"")}" placeholder="https://..." />
+    `;
+  }else{
+    box.innerHTML = `
+      <div class="muted">影片 URL</div>
+      <input id="f_vurl" value="${escapeHTML(card.hero?.video?.url||"")}" placeholder="https://...mp4" />
+      <div class="muted">影片封面 URL（previewUrl）</div>
+      <input id="f_vpre" value="${escapeHTML(card.hero?.video?.previewUrl||"")}" placeholder="https://...jpg" />
+    `;
+  }
+}
+function onModeChange(){
+  renderHeroFields();
+  // 即時更新預覽（讓你覺得不怪）
+  card.hero.mode = document.getElementById("f_mode").value;
+  renderPreview(applyFormToCard(false));
+  toggleEdit(true);
+}
+
+function renderFooterFields(){
+  const box = document.getElementById("footerFields");
+  if(!box) return;
+
+  const buttons = card.footer.buttons || [];
+  let html = "";
+
+  for(let i=0;i<5;i++){
+    const b = buttons[i] || { label:"", uri:"", style:"secondary" };
+    html += `
+      <div class="panel" style="padding:10px;margin-top:10px">
+        <div class="muted">按鈕 ${i+1}</div>
+        <input id="fb_label_${i}" value="${escapeHTML(b.label||"")}" placeholder="顯示文字" />
+        <input id="fb_uri_${i}" value="${escapeHTML(b.uri||"")}" placeholder="https://..." />
+        <select id="fb_style_${i}">
+          <option value="primary" ${b.style==="primary"?"selected":""}>primary</option>
+          <option value="secondary" ${b.style==="secondary"?"selected":""}>secondary</option>
+        </select>
+      </div>
+    `;
+  }
+  box.innerHTML = html;
+}
+
+function toggleEdit(on){
+  editing = on;
+  if(on) renderEditor();
+  else document.getElementById("editor").innerHTML = "";
+}
+
+/* ========= 儲存 ========= */
+async function save(){
+  const updated = applyFormToCard(true);
+
+  const data = await gasCall({
+    action: "saveCardByToken",
+    token,
+    userId: profile.userId,
+    cardPatch: updated
+  });
+
+  if(!data.ok){
+    alert(data.msg || "儲存失敗");
+    return;
+  }
+
+  alert("✅ 已儲存！回 LINE 輸入「顯示名片」即可看到個人化。");
+  closeMe();
+}
+
+function applyFormToCard(includeFooter){
+  const patch = { header:{}, hero:{}, footer:{} };
+
+  patch.header.name = document.getElementById("f_name")?.value || profile.displayName;
+  patch.header.subtitle = document.getElementById("f_sub")?.value || "LINE 行銷顧問";
+  patch.header.description = document.getElementById("f_desc")?.value || "";
+  patch.header.avatarUrl = profile.pictureUrl; // 你規格第 2 點：LOGO = LINE 頭貼（可後續開放自訂）
+
+  const mode = document.getElementById("f_mode")?.value || "image";
+  patch.hero.mode = mode;
+  if(mode==="image"){
+    patch.hero.image = { url: document.getElementById("f_img")?.value || "" };
+    patch.hero.video = { url:"", previewUrl:"" };
+  }else{
+    patch.hero.video = {
+      url: document.getElementById("f_vurl")?.value || "",
+      previewUrl: document.getElementById("f_vpre")?.value || ""
+    };
+    patch.hero.image = { url:"" };
+  }
+
+  if(includeFooter){
+    patch.footer.maxButtons = 5;
+    patch.footer.buttons = [];
+    for(let i=0;i<5;i++){
+      const label = document.getElementById(`fb_label_${i}`)?.value || "";
+      const uri = document.getElementById(`fb_uri_${i}`)?.value || "";
+      const style = document.getElementById(`fb_style_${i}`)?.value || "secondary";
+      if(label || uri) patch.footer.buttons.push({ label, uri, style });
+    }
+  }
+  return patch;
+}
+
+/* ========= 公版：只拿 profile 就能顯示 ========= */
+function buildPublicCardFromProfile(p){
+  return {
+    header: {
+      avatarUrl: p.pictureUrl || "",
+      name: p.displayName || "未命名",
+      subtitle: "LINE 行銷顧問",
+      description: "",
+      bgColor: "#1A1B1E",
+    },
+    hero: { mode:"image", image:{url:""}, video:{url:"",previewUrl:""} },
+  };
+}
+
+/* ========= GAS call ========= */
+async function gasCall(payload){
+  const res = await fetch(GAS_API_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(payload)
+  });
+  const t = await res.text();
+  try{ return JSON.parse(t); }catch(e){ return { ok:false, msg:"bad json", raw:t }; }
+}
+
+function closeMe(){
+  try{ liff.closeWindow(); }catch(e){ /* ignore */ }
+  // fallback
+}
+
+function setStatus(msg){ document.getElementById("status").textContent = msg; }
+function renderError(msg){
+  document.getElementById("app").innerHTML = `<pre style="white-space:pre-wrap;color:#ff6b6b">${escapeHTML(msg)}</pre>`;
+}
+function escapeHTML(s){
+  return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 </script>
 </body>
