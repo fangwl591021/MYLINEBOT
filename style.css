@@ -1,18 +1,4 @@
-/* 全局樣式 */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Noto Sans TC', sans-serif;
-    background-color: #f4f7f6;
-    overflow: hidden;
-}
-
+/* 基礎樣式 */
 .line-green { color: #00B900; }
 .bg-line-green { background-color: #00B900; }
 
@@ -27,14 +13,12 @@ body {
     overflow: hidden; 
     z-index: 50;
 }
-
 .w-expanded { width: 256px !important; min-width: 256px !important; max-width: 256px !important; }
 .w-collapsed { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }
-
 .sidebar-item-active { background-color: #374151; color: white; border-left: 4px solid #00B900; }
 .submenu-item-active { color: #00B900; font-weight: bold; }
 
-/* Preview Window 樣式 */
+/* 預覽視窗 */
 .preview-window { 
     width: 300px; 
     height: 560px; 
@@ -45,9 +29,9 @@ body {
     position: relative; 
     box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
 }
-
 .preview-window::-webkit-scrollbar { width: 0px; }
 
+/* Flex 氣泡樣式 */
 .flex-bubble { 
     background: #FFFFFF; 
     border-radius: 12px; 
@@ -56,7 +40,6 @@ body {
     margin: 0 auto; 
     border: 1px solid #333; 
 }
-
 .flex-bubble-dark { background: #1F2024; color: white; }
 .flex-badge { 
     position: absolute; 
@@ -70,7 +53,7 @@ body {
     z-index: 20; 
 }
 
-/* 電子商務版專用樣式 */
+/* 電子商務樣式 */
 .chat-room-bg {
     background-color: #7988a0;
     width: 100%;
@@ -81,63 +64,67 @@ body {
     align-items: center;
     padding: 20px;
 }
-
 .flex-bubble-container {
     width: 100%;
     max-width: 350px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+/* 工具類 */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.rotate-180 { transform: rotate(180deg); }
+.sidebar-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
-.border-line-green { border-color: #06C755; }
-.text-line-green { color: #06C755; }
-
-.aspect-1-1 { aspect-ratio: 1 / 1; }
-.aspect-16-9 { aspect-ratio: 16 / 9; }
-.aspect-4-3 { aspect-ratio: 4 / 3; }
-.aspect-1_91-1 { aspect-ratio: 1.91 / 1; }
-.aspect-3-4 { aspect-ratio: 3 / 4; }
-
-/* 工具提示 */
-.tooltip {
-    position: relative;
-    display: inline-block;
+/* 專案卡片 */
+.project-card { 
+    background: white; 
+    border-radius: 16px; 
+    overflow: hidden; 
+    transition: all 0.3s ease; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+    border: 1px solid #e5e7eb;
+}
+.project-card:hover { 
+    transform: translateY(-4px); 
+    box-shadow: 0 12px 24px rgba(0,0,0,0.1); 
+    border-color: #00B900;
 }
 
-.tooltip .tooltiptext {
-    visibility: hidden;
-    width: 120px;
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 5px;
-    position: absolute;
-    z-index: 1;
-    bottom: 125%;
-    left: 50%;
-    margin-left: -60px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 11px;
+/* 模態視窗 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
-.tooltip .tooltiptext::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: #333 transparent transparent transparent;
+/* 加載動畫 */
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #00B900;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.tooltip:hover .tooltiptext {
-    visibility: visible;
-    opacity: 1;
-}
-
-/* 更多樣式... (可以從原代碼複製過來) */
+/* 更多樣式... */
