@@ -55,57 +55,97 @@
 
         .ratio-btn { @apply px-3 py-1 text-xs border border-gray-200 rounded-md transition-all cursor-pointer hover:bg-gray-50 bg-white; }
         .ratio-btn-active { @apply border-line-green bg-green-50 text-line-green font-bold; }
+        
+        /* 側邊欄收合時的動畫效果 */
+        .sidebar-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body>
 
 <div id="app" class="flex h-screen overflow-hidden text-gray-800">
-    <!-- 側邊欄 Sidebar (收合後僅剩下圖標與 LOGO) -->
+    <!-- 側邊欄 Sidebar -->
     <aside :class="isSidebarCollapsed ? 'w-collapsed' : 'w-expanded'" class="sidebar-container text-gray-400 shadow-2xl">
-        <!-- Logo 區 -->
-        <div class="h-16 flex items-center px-6 border-b border-gray-700 overflow-hidden flex-shrink-0" :class="isSidebarCollapsed ? 'justify-center px-0' : ''">
+        <!-- Logo 區 - 使用條件渲染來切換顯示 -->
+        <div class="h-16 flex items-center border-b border-gray-700 overflow-hidden flex-shrink-0 sidebar-transition" 
+             :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6 justify-start'">
             <i class="fab fa-line text-3xl line-green"></i>
-            <span v-if="!isSidebarCollapsed" class="text-white text-xl font-bold ml-4 tracking-tighter whitespace-nowrap uppercase font-mono">LINEOA PLUG</span>
+            <!-- 只有在側邊欄展開時才顯示文字 -->
+            <span v-if="!isSidebarCollapsed" class="text-white text-xl font-bold ml-4 tracking-tighter whitespace-nowrap uppercase font-mono opacity-0 transition-opacity duration-300" 
+                  :class="{'opacity-100': !isSidebarCollapsed}">
+                LINEOA PLUG
+            </span>
         </div>
         
         <!-- 選單導覽 -->
         <nav class="mt-6 flex-grow overflow-y-auto no-scrollbar whitespace-nowrap">
             <!-- 儀表板 -->
             <a href="#" @click="switchTab('dashboard')" 
-               :class="{'sidebar-item-active': currentTab === 'dashboard', 'justify-center px-0': isSidebarCollapsed, 'px-6': !isSidebarCollapsed}" 
-               class="flex items-center py-4 hover:bg-gray-700 transition-colors">
+               :class="{'sidebar-item-active': currentTab === 'dashboard'}" 
+               class="flex items-center py-4 hover:bg-gray-700 transition-colors sidebar-transition"
+               :style="isSidebarCollapsed ? 'justify-content: center; padding-left: 0; padding-right: 0;' : 'padding-left: 1.5rem; padding-right: 1.5rem;'">
                 <i class="fas fa-chart-pie w-8 text-lg text-center flex-shrink-0"></i>
-                <span v-if="!isSidebarCollapsed" class="ml-2 font-medium">儀表板總覽</span>
+                <!-- 只有在側邊欄展開時才顯示文字 -->
+                <span v-if="!isSidebarCollapsed" class="ml-2 font-medium opacity-0 transition-opacity duration-300"
+                      :class="{'opacity-100': !isSidebarCollapsed}">
+                    儀表板總覽
+                </span>
             </a>
 
             <!-- 插件管理 -->
             <div>
                 <button @click="toggleSidebarMenu" 
-                        :class="{'text-white': currentTab === 'messages', 'justify-center px-0': isSidebarCollapsed, 'px-6': !isSidebarCollapsed}"
-                        class="w-full flex items-center py-4 hover:bg-gray-700 focus:outline-none overflow-hidden">
+                        :class="{'text-white': currentTab === 'messages'}"
+                        class="w-full flex items-center py-4 hover:bg-gray-700 focus:outline-none overflow-hidden sidebar-transition"
+                        :style="isSidebarCollapsed ? 'justify-content: center; padding-left: 0; padding-right: 0;' : 'padding-left: 1.5rem; padding-right: 1.5rem;'">
                     <i class="fas fa-layer-group w-8 text-lg text-center flex-shrink-0"></i>
-                    <span v-if="!isSidebarCollapsed" class="ml-2 font-medium">插件開發管理</span>
-                    <i v-if="!isSidebarCollapsed" class="fas fa-chevron-down text-[10px] ml-auto transition-transform" :class="{'rotate-180': isMessageMenuOpen}"></i>
+                    <!-- 只有在側邊欄展開時才顯示文字和箭頭 -->
+                    <template v-if="!isSidebarCollapsed">
+                        <span class="ml-2 font-medium opacity-0 transition-opacity duration-300"
+                              :class="{'opacity-100': !isSidebarCollapsed}">
+                            插件開發管理
+                        </span>
+                        <i class="fas fa-chevron-down text-[10px] ml-auto transition-transform sidebar-transition"
+                           :class="{'rotate-180': isMessageMenuOpen, 'opacity-0': isSidebarCollapsed, 'opacity-100': !isSidebarCollapsed}"></i>
+                    </template>
                 </button>
                 
-                <div v-if="isMessageMenuOpen && !isSidebarCollapsed" class="bg-black bg-opacity-20 py-2">
-                    <a href="#" @click="switchSubTab('messages', 'single')" :class="{'submenu-item-active': currentSubTab === 'single'}" class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors">單頁文章 Flex</a>
-                    <a href="#" @click="switchSubTab('messages', 'video')" :class="{'submenu-item-active': currentSubTab === 'video'}" class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors">影片名片插件</a>
+                <!-- 子選單 - 只在展開且子選單開啟時顯示 -->
+                <div v-if="isMessageMenuOpen && !isSidebarCollapsed" class="bg-black bg-opacity-20 py-2 sidebar-transition">
+                    <a href="#" @click="switchSubTab('messages', 'single')" 
+                       :class="{'submenu-item-active': currentSubTab === 'single'}" 
+                       class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors sidebar-transition">
+                        單頁文章 Flex
+                    </a>
+                    <a href="#" @click="switchSubTab('messages', 'video')" 
+                       :class="{'submenu-item-active': currentSubTab === 'video'}" 
+                       class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors sidebar-transition">
+                        影片名片插件
+                    </a>
                 </div>
             </div>
 
             <a href="#" @click="switchTab('templates')" 
-               :class="{'sidebar-item-active': currentTab === 'templates', 'justify-center px-0': isSidebarCollapsed, 'px-6': !isSidebarCollapsed}"
-               class="flex items-center py-4 hover:bg-gray-700 mt-2">
+               :class="{'sidebar-item-active': currentTab === 'templates'}"
+               class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
+               :style="isSidebarCollapsed ? 'justify-content: center; padding-left: 0; padding-right: 0;' : 'padding-left: 1.5rem; padding-right: 1.5rem;'">
                 <i class="fas fa-folder-open w-8 text-lg text-center flex-shrink-0"></i>
-                <span v-if="!isSidebarCollapsed" class="ml-2 font-medium">插件模板庫</span>
+                <!-- 只有在側邊欄展開時才顯示文字 -->
+                <span v-if="!isSidebarCollapsed" class="ml-2 font-medium opacity-0 transition-opacity duration-300"
+                      :class="{'opacity-100': !isSidebarCollapsed}">
+                    插件模板庫
+                </span>
             </a>
         </nav>
         
         <!-- 收合控制按鈕 -->
-        <button @click="isSidebarCollapsed = !isSidebarCollapsed" class="p-4 w-full flex items-center justify-center border-t border-gray-700 hover:text-white transition-colors text-gray-500 bg-gray-900 bg-opacity-30">
-            <i class="fas" :class="isSidebarCollapsed ? 'fa-indent text-xl' : 'fa-outdent text-xl'"></i>
-            <span v-if="!isSidebarCollapsed" class="ml-3 text-xs font-bold uppercase tracking-widest">收合左側欄</span>
+        <button @click="isSidebarCollapsed = !isSidebarCollapsed" 
+                class="p-4 w-full flex items-center justify-center border-t border-gray-700 hover:text-white transition-colors text-gray-500 bg-gray-900 bg-opacity-30 sidebar-transition">
+            <i class="fas sidebar-transition" :class="isSidebarCollapsed ? 'fa-indent text-xl' : 'fa-outdent text-xl'"></i>
+            <!-- 只有在側邊欄展開時才顯示文字 -->
+            <span v-if="!isSidebarCollapsed" class="ml-3 text-xs font-bold uppercase tracking-widest opacity-0 transition-opacity duration-300"
+                  :class="{'opacity-100': !isSidebarCollapsed}">
+                收合左側欄
+            </span>
         </button>
     </aside>
 
@@ -345,7 +385,7 @@
                 }
             });
 
-            // 初始化數據 - 更新為完整的影片模板結構
+            // 初始化數據
             const flexData = ref({
                 type: 'standard', 
                 imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
@@ -419,7 +459,6 @@
 
             const pageTitle = computed(() => currentTab.value === 'templates' ? '插件模板選擇中心' : '插件開發管理平台');
             
-            // 修正：產生完整的 JSON 結構以供推播
             const generatedJson = computed(() => {
                 if (flexData.value.type === 'standard') {
                     const contents = [
@@ -474,7 +513,6 @@
                         } 
                     };
                 } else {
-                    // 完整的影片模板 JSON 結構
                     return { 
                         type: "bubble",
                         size: "mega",
@@ -717,12 +755,46 @@
             });
 
             const switchTab = (t) => currentTab.value = t;
-            const toggleSidebarMenu = () => { if(isSidebarCollapsed.value) isSidebarCollapsed.value = false; isMessageMenuOpen.value = !isMessageMenuOpen.value; };
-            const switchSubTab = (t, s) => { currentTab.value = t; currentSubTab.value = s; flexData.value.type = (s === 'video' ? 'video' : 'standard'); };
-            const applyTemplate = (tpl) => { flexData.value = JSON.parse(JSON.stringify(tpl.payload)); currentTab.value = 'messages'; currentSubTab.value = (tpl.type === 'video' ? 'video' : 'single'); };
-            const addButton = () => { if (flexData.value.buttons.length < 3) flexData.value.buttons.push({ label: '新按鈕', uri: 'https://example.com', color: '#00B900' }); };
+            const toggleSidebarMenu = () => { 
+                if (isSidebarCollapsed.value) {
+                    isSidebarCollapsed.value = false;
+                    // 給一點時間讓側邊欄展開後再打開子選單
+                    setTimeout(() => {
+                        isMessageMenuOpen.value = true;
+                    }, 100);
+                } else {
+                    isMessageMenuOpen.value = !isMessageMenuOpen.value;
+                }
+            };
+            const switchSubTab = (t, s) => { 
+                currentTab.value = t; 
+                currentSubTab.value = s; 
+                flexData.value.type = (s === 'video' ? 'video' : 'standard'); 
+            };
+            const applyTemplate = (tpl) => { 
+                flexData.value = JSON.parse(JSON.stringify(tpl.payload)); 
+                currentTab.value = 'messages'; 
+                currentSubTab.value = (tpl.type === 'video' ? 'video' : 'single'); 
+            };
+            const addButton = () => { 
+                if (flexData.value.buttons.length < 3) {
+                    flexData.value.buttons.push({ 
+                        label: '新按鈕', 
+                        uri: 'https://example.com', 
+                        color: '#00B900' 
+                    }); 
+                }
+            };
             const removeButton = (idx) => flexData.value.buttons.splice(idx, 1);
-            const copyJson = () => { const el = document.createElement('textarea'); el.value = JSON.stringify(generatedJson.value, null, 2); document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert('JSON 已複製！'); };
+            const copyJson = () => { 
+                const el = document.createElement('textarea'); 
+                el.value = JSON.stringify(generatedJson.value, null, 2); 
+                document.body.appendChild(el); 
+                el.select(); 
+                document.execCommand('copy'); 
+                document.body.removeChild(el); 
+                alert('JSON 已複製！'); 
+            };
 
             const liffLogin = () => {
                 if (isInIframe.value) window.open("https://liff.line.me/2008541971-XPIDtaaj", "_blank");
@@ -730,9 +802,19 @@
             };
 
             const shareToLine = () => {
-                if (!liff.isLoggedIn()) { alert("請先登入 LINE。"); liffLogin(); return; }
-                liff.shareTargetPicker([{ type: "flex", altText: "分享客製化插件訊息", contents: generatedJson.value }])
-                .then(res => { if (res) alert("發送成功！"); })
+                if (!liff.isLoggedIn()) { 
+                    alert("請先登入 LINE。"); 
+                    liffLogin(); 
+                    return; 
+                }
+                liff.shareTargetPicker([{ 
+                    type: "flex", 
+                    altText: "分享客製化插件訊息", 
+                    contents: generatedJson.value 
+                }])
+                .then(res => { 
+                    if (res) alert("發送成功！"); 
+                })
                 .catch(err => alert("發送失敗：" + err));
             };
 
@@ -757,7 +839,29 @@
                 }
             };
 
-            return { isSidebarCollapsed, isMessageMenuOpen, currentTab, currentSubTab, flexData, templates, pageTitle, generatedJson, isSaving, isLoggedIn, isInIframe, liffLogin, switchTab, toggleSidebarMenu, switchSubTab, applyTemplate, addButton, removeButton, copyJson, saveToWorker, shareToLine }
+            return { 
+                isSidebarCollapsed, 
+                isMessageMenuOpen, 
+                currentTab, 
+                currentSubTab, 
+                flexData, 
+                templates, 
+                pageTitle, 
+                generatedJson, 
+                isSaving, 
+                isLoggedIn, 
+                isInIframe, 
+                liffLogin, 
+                switchTab, 
+                toggleSidebarMenu, 
+                switchSubTab, 
+                applyTemplate, 
+                addButton, 
+                removeButton, 
+                copyJson, 
+                saveToWorker, 
+                shareToLine 
+            }
         }
     }).mount('#app');
 </script>
