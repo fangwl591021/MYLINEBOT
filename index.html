@@ -132,6 +132,111 @@
         .aspect-4-3 { aspect-ratio: 4 / 3; }
         .aspect-1_91-1 { aspect-ratio: 1.91 / 1; }
         .aspect-3-4 { aspect-ratio: 3 / 4; }
+        
+        /* 調色盤彈出視窗樣式 */
+        .color-palette-popup {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 200px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .color-palette-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s;
+        }
+        
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-preset-label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        
+        /* 聊天室文字輸入區域 */
+        .chat-input-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px;
+            z-index: 100;
+        }
+        
+        .chat-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 12px;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .chat-input:focus {
+            border-color: #00B900;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 11px;
+        }
+        
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -288,6 +393,22 @@
                             </div>
                         </div>
 
+                        <!-- 聊天室文字設定區域 -->
+                        <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm mb-6">
+                            <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-comment-dots mr-2 text-line-green"></i> 聊天室顯示文字設定</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block mb-2">
+                                        <span class="text-[11px] font-bold text-slate-700 uppercase block">聊天室訊息文字</span>
+                                        <span class="text-[10px] text-slate-400 font-normal">※ 在 LINE 聊天室中顯示的文字訊息</span>
+                                    </label>
+                                    <textarea v-model="chatMessage" rows="3"
+                                              class="w-full text-sm p-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none"
+                                              placeholder="請輸入在聊天室中顯示的文字訊息..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- 編輯器內容 -->
                         <div v-if="flexData.type === 'standard'" class="space-y-6">
                             <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -307,7 +428,12 @@
                                 </h4>
                                 <div class="space-y-3">
                                     <div v-for="(btn, index) in flexData.buttons" :key="index" class="flex gap-3 items-center group bg-white p-3 rounded-xl border transition-all hover:border-green-100 shadow-sm">
-                                        <input type="color" v-model="btn.color">
+                                        <div class="relative">
+                                            <input type="color" v-model="btn.color">
+                                            <button @click="showColorPalette($event, 'buttonColor', index)" class="absolute -right-1 -bottom-1 p-1 bg-white rounded-full border shadow-sm text-xs text-gray-600 hover:text-line-green">
+                                                <i class="fas fa-palette"></i>
+                                            </button>
+                                        </div>
                                         <input type="text" v-model="btn.label" maxlength="10" class="w-32 px-4 py-2 border rounded-lg text-sm" placeholder="文字">
                                         <input type="text" v-model="btn.uri" class="flex-grow px-4 py-2 border rounded-lg text-sm" placeholder="網址">
                                         <button @click="removeButton(index)" class="p-2 text-gray-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
@@ -345,9 +471,12 @@
                                 <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-mouse-pointer mr-2 text-line-green"></i> 影片底部主按鈕設定</h4>
                                 <div class="space-y-3">
                                     <div v-for="(vBtn, vIdx) in flexData.videoFooterButtons" :key="vIdx" class="bg-white p-3 rounded-xl border flex gap-3 shadow-sm items-center transition-all hover:border-blue-100">
-                                        <div v-if="vIdx === 0" class="flex flex-col items-center gap-1">
+                                        <div v-if="vIdx === 0" class="flex flex-col items-center gap-1 relative">
                                             <span class="text-[9px] text-gray-400 font-bold">主色</span>
                                             <input type="color" v-model="vBtn.color">
+                                            <button @click="showColorPalette($event, 'videoButtonColor', vIdx)" class="absolute -right-1 -bottom-1 p-1 bg-white rounded-full border shadow-sm text-xs text-gray-600 hover:text-line-green">
+                                                <i class="fas fa-palette"></i>
+                                            </button>
                                         </div>
                                         <input type="text" v-model="vBtn.label" class="w-40 border rounded px-3 py-2 text-sm focus:border-blue-300 outline-none" placeholder="文字">
                                         <input type="text" v-model="vBtn.uri" class="flex-grow border rounded px-3 py-2 text-sm focus:border-blue-300 outline-none" placeholder="URL">
@@ -409,6 +538,22 @@
                                     <button @click="clearCurrentProject" class="text-sm text-gray-500 hover:text-red-500">
                                         <i class="fas fa-times"></i> 清除選擇
                                     </button>
+                                </div>
+                            </div>
+
+                            <!-- 聊天室文字設定區域 -->
+                            <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm mb-6">
+                                <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-comment-dots mr-2 text-line-green"></i> 聊天室顯示文字設定</h4>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block mb-2">
+                                            <span class="text-[11px] font-bold text-slate-700 uppercase block">聊天室訊息文字</span>
+                                            <span class="text-[10px] text-slate-400 font-normal">※ 在 LINE 聊天室中顯示的文字訊息</span>
+                                        </label>
+                                        <textarea v-model="chatMessage" @input="saveEcomHistory" rows="3"
+                                                  class="w-full text-sm p-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none"
+                                                  placeholder="請輸入在聊天室中顯示的文字訊息..."></textarea>
+                                    </div>
                                 </div>
                             </div>
 
@@ -499,6 +644,9 @@
                                                 <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
                                                     <input type="color" v-model="ecomState.body.tagBgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
                                                     <input type="text" v-model="ecomState.body.tagBgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                    <button @click="showColorPalette($event, 'tagBgColor')" class="p-1 text-slate-500 hover:text-line-green">
+                                                        <i class="fas fa-palette"></i>
+                                                    </button>
                                                 </div>
                                             </div>
                                             <div>
@@ -506,6 +654,9 @@
                                                 <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
                                                     <input type="color" v-model="ecomState.body.tagTextColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
                                                     <input type="text" v-model="ecomState.body.tagTextColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                    <button @click="showColorPalette($event, 'tagTextColor')" class="p-1 text-slate-500 hover:text-line-green">
+                                                        <i class="fas fa-palette"></i>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -526,6 +677,9 @@
                                                 <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
                                                     <input type="color" v-model="ecomState.body.bgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
                                                     <input type="text" v-model="ecomState.body.bgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                    <button @click="showColorPalette($event, 'bgColor')" class="p-1 text-slate-500 hover:text-line-green">
+                                                        <i class="fas fa-palette"></i>
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -543,6 +697,9 @@
                                                         <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
                                                             <input type="color" v-model="ecomState.body.bgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
                                                             <input type="text" v-model="ecomState.body.bgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                            <button @click="showColorPalette($event, 'bgColor')" class="p-1 text-slate-500 hover:text-line-green">
+                                                                <i class="fas fa-palette"></i>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -598,6 +755,9 @@
                                             <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
                                                 <input type="color" v-model="ecomState.footer.bg" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
                                                 <input type="text" v-model="ecomState.footer.bg" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                <button @click="showColorPalette($event, 'footerBg')" class="p-1 text-slate-500 hover:text-line-green">
+                                                    <i class="fas fa-palette"></i>
+                                                </button>
                                             </div>
                                         </div>
 
@@ -618,12 +778,24 @@
                                                     <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-1 py-0.5" title="文字顏色">
                                                         <input type="color" v-model="ecomState.footer.textColor" @change="saveEcomHistory" class="w-4 h-4 rounded cursor-pointer border-none p-0">
                                                         <input type="text" v-model="ecomState.footer.textColor" @input="saveEcomHistory" class="w-12 text-[10px] font-mono text-slate-600 outline-none uppercase">
+                                                        <button @click="showColorPalette($event, 'footerTextColor')" class="p-0.5 text-slate-500 hover:text-line-green">
+                                                            <i class="fas fa-palette text-xs"></i>
+                                                        </button>
                                                     </div>
                                                     <!-- Alignment -->
                                                     <div class="flex bg-slate-200 rounded p-0.5 space-x-0.5">
-                                                        <button @click="updateFooterTextAlign('start')" :class="ecomState.footer.textAlign === 'start' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠左"><i data-lucide="align-left" class="w-3 h-3"></i></button>
-                                                        <button @click="updateFooterTextAlign('center')" :class="ecomState.footer.textAlign === 'center' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="置中"><i data-lucide="align-center" class="w-3 h-3"></i></button>
-                                                        <button @click="updateFooterTextAlign('end')" :class="ecomState.footer.textAlign === 'end' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠右"><i data-lucide="align-right" class="w-3 h-3"></i></button>
+                                                        <button @click="updateFooterTextAlign('start')" :class="ecomState.footer.textAlign === 'start' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠左對齊" class="tooltip">
+                                                            <i data-lucide="align-left" class="w-3 h-3"></i>
+                                                            <span class="tooltiptext">靠左對齊</span>
+                                                        </button>
+                                                        <button @click="updateFooterTextAlign('center')" :class="ecomState.footer.textAlign === 'center' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="置中對齊" class="tooltip">
+                                                            <i data-lucide="align-center" class="w-3 h-3"></i>
+                                                            <span class="tooltiptext">置中對齊</span>
+                                                        </button>
+                                                        <button @click="updateFooterTextAlign('end')" :class="ecomState.footer.textAlign === 'end' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠右對齊" class="tooltip">
+                                                            <i data-lucide="align-right" class="w-3 h-3"></i>
+                                                            <span class="tooltiptext">靠右對齊</span>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -634,9 +806,12 @@
                                             <div class="text-[11px] font-bold text-slate-700 mb-2">按鈕 1 (Primary)</div>
                                             <div class="flex gap-2 mb-2">
                                                 <input type="text" v-model="ecomState.footer.btn1.label" @input="saveEcomHistory" class="flex-1 text-xs p-2 border border-slate-300 rounded bg-white focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="名稱">
-                                                <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-28">
+                                                <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-32 relative">
                                                     <input type="color" v-model="ecomState.footer.btn1.color" @change="saveEcomHistory" class="w-5 h-5 rounded cursor-pointer border-none shadow-sm">
                                                     <input type="text" v-model="ecomState.footer.btn1.color" @input="saveEcomHistory" class="flex-1 text-[10px] font-mono text-slate-600 outline-none uppercase text-center">
+                                                    <button @click="showColorPalette($event, 'btn1Color')" class="p-1 text-slate-500 hover:text-line-green">
+                                                        <i class="fas fa-palette text-xs"></i>
+                                                    </button>
                                                 </div>
                                             </div>
                                             <input type="text" v-model="ecomState.footer.btn1.uri" @input="saveEcomHistory" class="w-full text-xs p-2 border border-slate-300 rounded font-mono bg-white text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
@@ -645,9 +820,12 @@
                                             <div class="text-[11px] font-bold text-slate-700 mb-2">按鈕 2 (Primary)</div>
                                             <div class="flex gap-2 mb-2">
                                                 <input type="text" v-model="ecomState.footer.btn2.label" @input="saveEcomHistory" class="flex-1 text-xs p-2 border border-slate-300 rounded bg-white focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="名稱">
-                                                <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-28">
+                                                <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-32 relative">
                                                     <input type="color" v-model="ecomState.footer.btn2.color" @change="saveEcomHistory" class="w-5 h-5 rounded cursor-pointer border-none shadow-sm">
                                                     <input type="text" v-model="ecomState.footer.btn2.color" @input="saveEcomHistory" class="flex-1 text-[10px] font-mono text-slate-600 outline-none uppercase text-center">
+                                                    <button @click="showColorPalette($event, 'btn2Color')" class="p-1 text-slate-500 hover:text-line-green">
+                                                        <i class="fas fa-palette text-xs"></i>
+                                                    </button>
                                                 </div>
                                             </div>
                                             <input type="text" v-model="ecomState.footer.btn2.uri" @input="saveEcomHistory" class="w-full text-xs p-2 border border-slate-300 rounded font-mono bg-white text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
@@ -739,8 +917,12 @@
                                 </div>
                             </div>
                             
-                            <!-- 底部留白 -->
-                            <div class="h-10 w-full shrink-0"></div>
+                            <!-- 聊天室文字輸入區域 -->
+                            <div class="chat-input-container">
+                                <textarea v-model="chatMessage" 
+                                          class="chat-input" 
+                                          placeholder="輸入聊天室顯示文字..."></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -794,6 +976,13 @@
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- 聊天室文字輸入區域 -->
+                            <div class="chat-input-container">
+                                <textarea v-model="chatMessage" 
+                                          class="chat-input" 
+                                          placeholder="輸入聊天室顯示文字..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -1009,6 +1198,25 @@
     </div>
 </div>
 
+<!-- 調色盤彈出視窗 -->
+<div v-if="showColorPalettePopup" class="color-palette-popup" :style="colorPalettePosition">
+    <div class="color-preset-label">預設顏色</div>
+    <div class="color-palette-grid">
+        <div v-for="color in colorPresets" :key="color" 
+             :style="{ backgroundColor: color }" 
+             class="color-swatch"
+             @click="selectColor(color)"></div>
+    </div>
+    <div class="flex justify-between">
+        <button @click="copyCurrentColor" class="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+            複製
+        </button>
+        <button @click="closeColorPalette" class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+            關閉
+        </button>
+    </div>
+</div>
+
 <script>
 const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
@@ -1026,7 +1234,22 @@ createApp({
     const isLoggedIn = ref(false);
     const isInIframe = ref(false);
     const liffProfile = ref(null);
+    const chatMessage = ref("🎉 限時優惠！精選商品特價中，點擊查看最新商品！");
     
+    // 調色盤相關狀態
+    const showColorPalettePopup = ref(false);
+    const colorPalettePosition = ref({ top: '0px', left: '0px' });
+    const currentColorTarget = ref('');
+    const currentColorIndex = ref(0);
+    const colorPresets = ref([
+      '#FF0000', '#FF4500', '#FF8C00', '#FFD700', '#ADFF2F', '#32CD32', '#00FF7F',
+      '#00CED1', '#1E90FF', '#4169E1', '#8A2BE2', '#FF69B4', '#FF1493', '#C71585',
+      '#000000', '#333333', '#666666', '#999999', '#CCCCCC', '#FFFFFF',
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8',
+      '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85C1E9',
+      '#06C755', '#00B900', '#00A0E9', '#FFCC00', '#FF6666', '#6666FF'
+    ]);
+
     // 專案相關狀態
     const showNewProjectModal = ref(false);
     const showDeleteConfirm = ref(false);
@@ -1109,241 +1332,6 @@ createApp({
     });
 
     const ecomHistory = ref([]);
-
-    // 電子商務版方法
-    const saveEcomHistory = () => {
-      if (ecomHistory.value.length > 20) ecomHistory.value.shift();
-      ecomHistory.value.push(JSON.parse(JSON.stringify(ecomState.value)));
-    };
-
-    const updateHeroType = (type) => {
-      saveEcomHistory();
-      ecomState.value.hero.type = type;
-    };
-
-    const updateBodyType = (type) => {
-      saveEcomHistory();
-      ecomState.value.body.bgType = type;
-    };
-
-    const updateFooterTextAlign = (align) => {
-      saveEcomHistory();
-      ecomState.value.footer.textAlign = align;
-    };
-
-    const updateEcomItem = (index, field, value) => {
-      saveEcomHistory();
-      ecomState.value.body.items[index][field] = value;
-    };
-
-    const addEcomItem = () => {
-      saveEcomHistory();
-      ecomState.value.body.items.push({ 
-        title: "新商品", 
-        img: "https://lihi.cc/mwMvo", 
-        url: "https://line.me" 
-      });
-    };
-
-    const deleteEcomItem = (index) => {
-      saveEcomHistory();
-      ecomState.value.body.items.splice(index, 1);
-    };
-
-    const getAspectClass = (aspect) => {
-      const ratioMap = { 
-        '1:1': 'aspect-1-1', 
-        '16:9': 'aspect-16-9', 
-        '4:3': 'aspect-4-3', 
-        '1.91:1': 'aspect-1_91-1', 
-        '3:4': 'aspect-3-4' 
-      };
-      return ratioMap[aspect] || 'aspect-16-9';
-    };
-
-    const getTextAlignClass = (align) => {
-      const alignMap = { 
-        'start': 'text-left', 
-        'center': 'text-center', 
-        'end': 'text-right' 
-      };
-      return alignMap[align] || 'text-center';
-    };
-
-    // 生成電子商務版 JSON
-    const generateEcommerceJson = () => {
-      const cols = ecomState.value.body.columns;
-      const width = cols === 3 ? "32%" : "23%";
-      const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
-      
-      // 基礎 Body 設定
-      const bodyConfig = {
-        "type": "box",
-        "layout": "vertical",
-        "backgroundColor": ecomState.value.body.bgColor,
-        "paddingAll": "none",
-        "contents": []
-      };
-
-      // 構建內部結構
-      const productContent = {
-        "type": "box",
-        "layout": "vertical",
-        "contents": chunk(ecomState.value.body.items, cols).map((row, idx) => ({
-          "type": "box",
-          "layout": "horizontal",
-          "margin": idx === 0 ? "none" : "md",
-          "contents": row.map((item, colIdx) => ({
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-              {
-                "type": "image",
-                "url": item.img,
-                "aspectRatio": "1:1",
-                "size": "full",
-                "aspectMode": "cover"
-              },
-              {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                  {
-                    "type": "text",
-                    "text": item.title,
-                    "size": "xxs",
-                    "color": ecomState.value.body.tagTextColor,
-                    "align": "center",
-                    "weight": "bold",
-                    "wrap": true
-                  }
-                ],
-                "backgroundColor": ecomState.value.body.tagBgColor,
-                "cornerRadius": "sm",
-                "paddingAll": "xs",
-                "margin": "sm"
-              }
-            ],
-            "paddingAll": "xs",
-            "backgroundColor": "#FFFFFF",
-            "cornerRadius": "md",
-            "width": width,
-            "action": { "type": "uri", "uri": item.url },
-            "margin": colIdx === 0 ? "none" : "md" 
-          }))
-        })),
-        "paddingAll": "md"
-      };
-
-      if (ecomState.value.body.bgType === 'image') {
-        const bgImageProps = ecomState.value.body.bgMode === 'top' 
-          ? { "width": "100%", "aspectMode": "width", "align": "start", "offsetTop": "0px" } 
-          : { "size": "full", "aspectMode": "cover" };
-
-        bodyConfig.contents.push({
-          "type": "box",
-          "layout": "vertical",
-          "contents": [
-            {
-              "type": "image",
-              "url": ecomState.value.body.bg,
-              "position": "absolute",
-              ...bgImageProps
-            },
-            productContent
-          ]
-        });
-      } else {
-        bodyConfig.contents.push(productContent);
-      }
-
-      const footerContents = [];
-      
-      if (ecomState.value.footer.textEnabled) {
-        footerContents.push({
-          "type": "text",
-          "text": ecomState.value.footer.text,
-          "wrap": true,
-          "size": "xs",
-          "color": ecomState.value.footer.textColor,
-          "align": ecomState.value.footer.textAlign,
-          "margin": "md"
-        });
-      }
-
-      footerContents.push({
-        "type": "box",
-        "layout": "horizontal",
-        "spacing": "md",
-        "contents": [
-          {
-            "type": "button",
-            "style": "primary",
-            "height": "sm",
-            "action": { "type": "uri", "label": ecomState.value.footer.btn1.label, "uri": ecomState.value.footer.btn1.uri },
-            "color": ecomState.value.footer.btn1.color
-          },
-          {
-            "type": "button",
-            "style": "primary",
-            "height": "sm",
-            "action": { "type": "uri", "label": ecomState.value.footer.btn2.label, "uri": ecomState.value.footer.btn2.uri },
-            "color": ecomState.value.footer.btn2.color
-          }
-        ]
-      });
-
-      const flex = {
-        "type": "bubble",
-        "size": ecomState.value.body.bubbleSize,
-        "body": bodyConfig,
-        "footer": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "backgroundColor": ecomState.value.footer.bg,
-          "contents": footerContents,
-          "paddingTop": "md"
-        }
-      };
-
-      if (ecomState.value.hero.type !== 'none') {
-        flex.hero = ecomState.value.hero.type === 'video' ? {
-          "type": "video",
-          "url": ecomState.value.hero.videoUrl,
-          "previewUrl": ecomState.value.hero.url,
-          "altContent": {
-            "type": "image",
-            "size": "full",
-            "aspectRatio": ecomState.value.hero.aspectRatio,
-            "aspectMode": "cover",
-            "url": ecomState.value.hero.url,
-            "backgroundColor": "#000000"
-          },
-          "aspectRatio": ecomState.value.hero.aspectRatio
-        } : {
-          "type": "image",
-          "url": ecomState.value.hero.url,
-          "size": "full",
-          "aspectRatio": ecomState.value.hero.aspectRatio,
-          "aspectMode": "cover",
-          "action": { "type": "uri", "uri": ecomState.value.hero.link }
-        };
-      }
-
-      return flex;
-    };
-
-    // 複製電子商務版 JSON
-    const copyEcommerceJson = () => { 
-      const el = document.createElement('textarea'); 
-      el.value = JSON.stringify(generateEcommerceJson(), null, 2); 
-      document.body.appendChild(el); 
-      el.select(); 
-      document.execCommand('copy'); 
-      document.body.removeChild(el); 
-      alert('JSON 已複製！'); 
-    };
 
     // 原有數據
     const flexData = ref({
@@ -1781,6 +1769,359 @@ createApp({
       }
     });
 
+    // 電子商務版方法
+    const saveEcomHistory = () => {
+      if (ecomHistory.value.length > 20) ecomHistory.value.shift();
+      ecomHistory.value.push(JSON.parse(JSON.stringify(ecomState.value)));
+    };
+
+    const updateHeroType = (type) => {
+      saveEcomHistory();
+      ecomState.value.hero.type = type;
+    };
+
+    const updateBodyType = (type) => {
+      saveEcomHistory();
+      ecomState.value.body.bgType = type;
+    };
+
+    const updateFooterTextAlign = (align) => {
+      saveEcomHistory();
+      ecomState.value.footer.textAlign = align;
+    };
+
+    const updateEcomItem = (index, field, value) => {
+      saveEcomHistory();
+      ecomState.value.body.items[index][field] = value;
+    };
+
+    const addEcomItem = () => {
+      saveEcomHistory();
+      ecomState.value.body.items.push({ 
+        title: "新商品", 
+        img: "https://lihi.cc/mwMvo", 
+        url: "https://line.me" 
+      });
+    };
+
+    const deleteEcomItem = (index) => {
+      saveEcomHistory();
+      ecomState.value.body.items.splice(index, 1);
+    };
+
+    const getAspectClass = (aspect) => {
+      const ratioMap = { 
+        '1:1': 'aspect-1-1', 
+        '16:9': 'aspect-16-9', 
+        '4:3': 'aspect-4-3', 
+        '1.91:1': 'aspect-1_91-1', 
+        '3:4': 'aspect-3-4' 
+      };
+      return ratioMap[aspect] || 'aspect-16-9';
+    };
+
+    const getTextAlignClass = (align) => {
+      const alignMap = { 
+        'start': 'text-left', 
+        'center': 'text-center', 
+        'end': 'text-right' 
+      };
+      return alignMap[align] || 'text-center';
+    };
+
+    // 調色盤功能
+    const showColorPalette = (event, target, index = 0) => {
+      event.stopPropagation();
+      currentColorTarget.value = target;
+      currentColorIndex.value = index;
+      
+      const rect = event.target.getBoundingClientRect();
+      colorPalettePosition.value = {
+        top: `${rect.bottom + window.scrollY + 5}px`,
+        left: `${rect.left + window.scrollX}px`
+      };
+      
+      showColorPalettePopup.value = true;
+    };
+
+    const closeColorPalette = () => {
+      showColorPalettePopup.value = false;
+      currentColorTarget.value = '';
+      currentColorIndex.value = 0;
+    };
+
+    const selectColor = (color) => {
+      switch (currentColorTarget.value) {
+        case 'tagBgColor':
+          ecomState.value.body.tagBgColor = color;
+          saveEcomHistory();
+          break;
+        case 'tagTextColor':
+          ecomState.value.body.tagTextColor = color;
+          saveEcomHistory();
+          break;
+        case 'bgColor':
+          ecomState.value.body.bgColor = color;
+          saveEcomHistory();
+          break;
+        case 'footerBg':
+          ecomState.value.footer.bg = color;
+          saveEcomHistory();
+          break;
+        case 'footerTextColor':
+          ecomState.value.footer.textColor = color;
+          saveEcomHistory();
+          break;
+        case 'btn1Color':
+          ecomState.value.footer.btn1.color = color;
+          saveEcomHistory();
+          break;
+        case 'btn2Color':
+          ecomState.value.footer.btn2.color = color;
+          saveEcomHistory();
+          break;
+        case 'buttonColor':
+          flexData.value.buttons[currentColorIndex.value].color = color;
+          break;
+        case 'videoButtonColor':
+          flexData.value.videoFooterButtons[currentColorIndex.value].color = color;
+          break;
+      }
+      closeColorPalette();
+    };
+
+    const copyCurrentColor = () => {
+      let colorToCopy = '';
+      switch (currentColorTarget.value) {
+        case 'tagBgColor':
+          colorToCopy = ecomState.value.body.tagBgColor;
+          break;
+        case 'tagTextColor':
+          colorToCopy = ecomState.value.body.tagTextColor;
+          break;
+        case 'bgColor':
+          colorToCopy = ecomState.value.body.bgColor;
+          break;
+        case 'footerBg':
+          colorToCopy = ecomState.value.footer.bg;
+          break;
+        case 'footerTextColor':
+          colorToCopy = ecomState.value.footer.textColor;
+          break;
+        case 'btn1Color':
+          colorToCopy = ecomState.value.footer.btn1.color;
+          break;
+        case 'btn2Color':
+          colorToCopy = ecomState.value.footer.btn2.color;
+          break;
+        case 'buttonColor':
+          colorToCopy = flexData.value.buttons[currentColorIndex.value].color;
+          break;
+        case 'videoButtonColor':
+          colorToCopy = flexData.value.videoFooterButtons[currentColorIndex.value].color;
+          break;
+      }
+      
+      if (colorToCopy) {
+        navigator.clipboard.writeText(colorToCopy)
+          .then(() => alert('顏色已複製到剪貼簿'))
+          .catch(err => console.error('複製失敗:', err));
+      }
+    };
+
+    // 點擊其他地方關閉調色盤
+    document.addEventListener('click', (event) => {
+      if (showColorPalettePopup.value && !event.target.closest('.color-palette-popup')) {
+        closeColorPalette();
+      }
+    });
+
+    // 生成電子商務版 JSON
+    const generateEcommerceJson = () => {
+      const cols = ecomState.value.body.columns;
+      const width = cols === 3 ? "32%" : "23%";
+      const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
+      
+      // 基礎 Body 設定
+      const bodyConfig = {
+        "type": "box",
+        "layout": "vertical",
+        "backgroundColor": ecomState.value.body.bgColor,
+        "paddingAll": "none",
+        "contents": []
+      };
+
+      // 構建內部結構
+      const productContent = {
+        "type": "box",
+        "layout": "vertical",
+        "contents": chunk(ecomState.value.body.items, cols).map((row, idx) => ({
+          "type": "box",
+          "layout": "horizontal",
+          "margin": idx === 0 ? "none" : "md",
+          "contents": row.map((item, colIdx) => ({
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "image",
+                "url": item.img,
+                "aspectRatio": "1:1",
+                "size": "full",
+                "aspectMode": "cover"
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": item.title,
+                    "size": "xxs",
+                    "color": ecomState.value.body.tagTextColor,
+                    "align": "center",
+                    "weight": "bold",
+                    "wrap": true
+                  }
+                ],
+                "backgroundColor": ecomState.value.body.tagBgColor,
+                "cornerRadius": "sm",
+                "paddingAll": "xs",
+                "margin": "sm"
+              }
+            ],
+            "paddingAll": "xs",
+            "backgroundColor": "#FFFFFF",
+            "cornerRadius": "md",
+            "width": width,
+            "action": { "type": "uri", "uri": item.url },
+            "margin": colIdx === 0 ? "none" : "md" 
+          }))
+        })),
+        "paddingAll": "md"
+      };
+
+      if (ecomState.value.body.bgType === 'image') {
+        const bgImageProps = ecomState.value.body.bgMode === 'top' 
+          ? { "width": "100%", "aspectMode": "width", "align": "start", "offsetTop": "0px" } 
+          : { "size": "full", "aspectMode": "cover" };
+
+        bodyConfig.contents.push({
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "image",
+              "url": ecomState.value.body.bg,
+              "position": "absolute",
+              ...bgImageProps
+            },
+            productContent
+          ]
+        });
+      } else {
+        bodyConfig.contents.push(productContent);
+      }
+
+      const footerContents = [];
+      
+      if (ecomState.value.footer.textEnabled) {
+        footerContents.push({
+          "type": "text",
+          "text": ecomState.value.footer.text,
+          "wrap": true,
+          "size": "xs",
+          "color": ecomState.value.footer.textColor,
+          "align": ecomState.value.footer.textAlign,
+          "margin": "md"
+        });
+      }
+
+      footerContents.push({
+        "type": "box",
+        "layout": "horizontal",
+        "spacing": "md",
+        "contents": [
+          {
+            "type": "button",
+            "style": "primary",
+            "height": "sm",
+            "action": { "type": "uri", "label": ecomState.value.footer.btn1.label, "uri": ecomState.value.footer.btn1.uri },
+            "color": ecomState.value.footer.btn1.color
+          },
+          {
+            "type": "button",
+            "style": "primary",
+            "height": "sm",
+            "action": { "type": "uri", "label": ecomState.value.footer.btn2.label, "uri": ecomState.value.footer.btn2.uri },
+            "color": ecomState.value.footer.btn2.color
+          }
+        ]
+      });
+
+      const flex = {
+        "type": "bubble",
+        "size": ecomState.value.body.bubbleSize,
+        "body": bodyConfig,
+        "footer": {
+          "type": "box",
+          "layout": "vertical",
+          "spacing": "sm",
+          "backgroundColor": ecomState.value.footer.bg,
+          "contents": footerContents,
+          "paddingTop": "md"
+        }
+      };
+
+      if (ecomState.value.hero.type !== 'none') {
+        flex.hero = ecomState.value.hero.type === 'video' ? {
+          "type": "video",
+          "url": ecomState.value.hero.videoUrl,
+          "previewUrl": ecomState.value.hero.url,
+          "altContent": {
+            "type": "image",
+            "size": "full",
+            "aspectRatio": ecomState.value.hero.aspectRatio,
+            "aspectMode": "cover",
+            "url": ecomState.value.hero.url,
+            "backgroundColor": "#000000"
+          },
+          "aspectRatio": ecomState.value.hero.aspectRatio
+        } : {
+          "type": "image",
+          "url": ecomState.value.hero.url,
+          "size": "full",
+          "aspectRatio": ecomState.value.hero.aspectRatio,
+          "aspectMode": "cover",
+          "action": { "type": "uri", "uri": ecomState.value.hero.link }
+        };
+      }
+
+      return flex;
+    };
+
+    // 複製電子商務版 JSON
+    const copyEcommerceJson = () => { 
+      const el = document.createElement('textarea'); 
+      el.value = JSON.stringify(generateEcommerceJson(), null, 2); 
+      document.body.appendChild(el); 
+      el.select(); 
+      document.execCommand('copy'); 
+      document.body.removeChild(el); 
+      alert('JSON 已複製！'); 
+    };
+
+    // 複製標準 JSON
+    const copyJson = () => { 
+      const el = document.createElement('textarea'); 
+      el.value = JSON.stringify(generatedJson.value, null, 2); 
+      document.body.appendChild(el); 
+      el.select(); 
+      document.execCommand('copy'); 
+      document.body.removeChild(el); 
+      alert('JSON 已複製！'); 
+    };
+
     // 檢查工作表狀態
     const checkSheetsStatus = async () => {
       try {
@@ -1870,16 +2211,6 @@ createApp({
     };
     
     const removeButton = (idx) => flexData.value.buttons.splice(idx, 1);
-    
-    const copyJson = () => { 
-      const el = document.createElement('textarea'); 
-      el.value = JSON.stringify(generatedJson.value, null, 2); 
-      document.body.appendChild(el); 
-      el.select(); 
-      document.execCommand('copy'); 
-      document.body.removeChild(el); 
-      alert('JSON 已複製！'); 
-    };
 
     const liffLogin = () => {
       if (isInIframe.value) window.open("https://liff.line.me/2008541971-XPIDtaaj", "_blank");
@@ -1893,11 +2224,16 @@ createApp({
         liffLogin(); 
         return; 
       }
-      liff.shareTargetPicker([{ 
-        type: "flex", 
-        altText: "分享客製化插件訊息", 
+      
+      // 創建包含聊天室文字的完整訊息
+      const flexMessage = {
+        type: "flex",
+        altText: chatMessage.value || (flexData.value.type === 'ecommerce' ? "電商型插件訊息" : 
+                 flexData.value.type === 'video' ? "影片名片訊息" : "文章型插件訊息"),
         contents: flexData.value.type === 'ecommerce' ? generateEcommerceJson() : generatedJson.value
-      }])
+      };
+      
+      liff.shareTargetPicker([flexMessage])
       .then(res => { 
         if (res) alert("發送成功！"); 
       })
@@ -1918,7 +2254,13 @@ createApp({
           userId: liffProfile.value.userId,
           type: flexData.value.type,
           name: flexData.value.type === 'ecommerce' ? '電商型專案' : (flexData.value.title || flexData.value.headerName || '未命名專案'),
-          params: flexData.value.type === 'ecommerce' ? ecomState.value : flexData.value,
+          params: flexData.value.type === 'ecommerce' ? {
+            chatMessage: chatMessage.value,
+            ...ecomState.value
+          } : {
+            chatMessage: chatMessage.value,
+            ...flexData.value
+          },
           flexPayload: flexData.value.type === 'ecommerce' ? generateEcommerceJson() : generatedJson.value
         };
 
@@ -1986,7 +2328,13 @@ createApp({
           name: isUpdate ? currentProjectName.value : newProject.value.name,
           description: newProject.value.description,
           type: flexData.value.type,
-          data: flexData.value.type === 'ecommerce' ? JSON.stringify(ecomState.value) : JSON.stringify(flexData.value),
+          data: flexData.value.type === 'ecommerce' ? JSON.stringify({
+            chatMessage: chatMessage.value,
+            ...ecomState.value
+          }) : JSON.stringify({
+            chatMessage: chatMessage.value,
+            ...flexData.value
+          }),
           flex_json: flexData.value.type === 'ecommerce' ? JSON.stringify(generateEcommerceJson()) : JSON.stringify(generatedJson.value)
         };
 
@@ -2041,8 +2389,10 @@ createApp({
           
           if (project.type === 'ecommerce') {
             ecomState.value = projectData;
+            chatMessage.value = projectData.chatMessage || "🎉 限時優惠！精選商品特價中，點擊查看最新商品！";
           } else {
             flexData.value = projectData;
+            chatMessage.value = projectData.chatMessage || "📢 歡迎查看我的分享！";
           }
           
           currentProjectId.value = project.id;
@@ -2099,6 +2449,8 @@ createApp({
     const clearCurrentProject = () => {
       currentProjectId.value = null;
       currentProjectName.value = '';
+      chatMessage.value = "🎉 限時優惠！精選商品特價中，點擊查看最新商品！";
+      
       if (flexData.value.type === 'ecommerce') {
         ecomState.value = {
           hero: {
@@ -2204,6 +2556,7 @@ createApp({
       currentSubTab, 
       flexData, 
       ecomState,
+      chatMessage,
       templates,
       projects,
       projectSearch,
@@ -2213,6 +2566,9 @@ createApp({
       currentProjectName,
       showNewProjectModal,
       showDeleteConfirm,
+      showColorPalettePopup,
+      colorPalettePosition,
+      colorPresets,
       pageTitle, 
       generatedJson, 
       filteredProjects,
@@ -2250,7 +2606,12 @@ createApp({
       getTextAlignClass,
       saveEcomHistory,
       generateEcommerceJson,
-      copyEcommerceJson
+      copyEcommerceJson,
+      // 調色盤方法
+      showColorPalette,
+      closeColorPalette,
+      selectColor,
+      copyCurrentColor
     };
   }
 }).mount('#app');
