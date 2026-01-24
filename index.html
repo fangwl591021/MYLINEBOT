@@ -96,14 +96,27 @@
             max-height: 90vh;
             overflow-y: auto;
         }
+        
+        /* 載入動畫 */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #00B900;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
 
 <div id="app" class="flex h-screen overflow-hidden text-gray-800">
-    <!-- 側邊欄 Sidebar -->
+    <!-- 側邊欄 -->
     <aside :class="isSidebarCollapsed ? 'w-collapsed' : 'w-expanded'" class="sidebar-container text-gray-400 shadow-2xl">
-        <!-- Logo 區 -->
         <div class="h-16 flex items-center border-b border-gray-700 overflow-hidden flex-shrink-0 sidebar-transition" 
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6 justify-start'">
             <i class="fab fa-line text-3xl line-green"></i>
@@ -113,9 +126,7 @@
             </span>
         </div>
         
-        <!-- 選單導覽 -->
         <nav class="mt-6 flex-grow overflow-y-auto no-scrollbar whitespace-nowrap">
-            <!-- 儀表板 -->
             <a href="#" @click="switchTab('dashboard')" 
                :class="{'sidebar-item-active': currentTab === 'dashboard'}" 
                class="flex items-center py-4 hover:bg-gray-700 transition-colors sidebar-transition"
@@ -127,7 +138,6 @@
                 </span>
             </a>
 
-            <!-- 插件開發管理 -->
             <div>
                 <button @click="toggleSidebarMenu" 
                         :class="{'text-white': currentTab === 'messages'}"
@@ -158,7 +168,6 @@
                 </div>
             </div>
 
-            <!-- 插件模板庫 -->
             <a href="#" @click="switchTab('templates')" 
                :class="{'sidebar-item-active': currentTab === 'templates'}"
                class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
@@ -170,7 +179,6 @@
                 </span>
             </a>
 
-            <!-- 專案管理 -->
             <a href="#" @click="switchTab('projects')" 
                :class="{'sidebar-item-active': currentTab === 'projects'}"
                class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
@@ -183,7 +191,6 @@
             </a>
         </nav>
         
-        <!-- 收合控制按鈕 -->
         <button @click="isSidebarCollapsed = !isSidebarCollapsed" 
                 class="p-4 w-full flex items-center justify-center border-t border-gray-700 hover:text-white transition-colors text-gray-500 bg-gray-900 bg-opacity-30 sidebar-transition">
             <i class="fas sidebar-transition" :class="isSidebarCollapsed ? 'fa-indent text-xl' : 'fa-outdent text-xl'"></i>
@@ -196,11 +203,9 @@
 
     <!-- 主要內容區 -->
     <main class="flex-grow flex flex-col h-full relative overflow-hidden bg-[#f8fafc]">
-        <!-- 頂部 Header -->
         <header class="h-16 bg-white border-b flex items-center justify-between px-8 flex-shrink-0 shadow-sm z-10">
             <h2 class="text-xl font-bold text-gray-800">{{ pageTitle }}</h2>
             <div class="flex items-center gap-4">
-                <!-- LINE 登入引導 -->
                 <div v-if="isLoggedIn" class="flex items-center gap-2 px-4 py-1.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
                     <div class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(0,185,0,0.6)]"></div>
                     <span class="text-[10px] text-green-700 font-bold uppercase">LINE Connected</span>
@@ -215,13 +220,12 @@
         <div class="flex-grow overflow-hidden flex">
             <!-- 編輯與預覽區 -->
             <div v-if="currentTab === 'messages'" class="flex w-full overflow-hidden">
-                <!-- 左側：編輯表單 -->
                 <div class="flex-grow overflow-y-auto p-8 bg-white shadow-inner border-r no-scrollbar">
                     <div class="max-w-4xl mx-auto">
                         <div class="flex items-center justify-between mb-8">
                             <div>
                                 <h3 class="text-2xl font-bold text-gray-800">{{ flexData.type === 'video' ? '影片名片開發' : '文章型 Flex 開發' }}</h3>
-                                <p class="text-sm text-gray-400 mt-1">編輯參數後，可透過 Worker 代理儲存或直接推播至 LINE。</p>
+                                <p class="text-sm text-gray-400 mt-1">編輯參數後，可儲存為專案或直接推播至 LINE。</p>
                             </div>
                             <div class="flex gap-2">
                                 <button v-if="currentProjectId" @click="saveProject(true)" :disabled="isSaving" class="px-6 py-2.5 bg-purple-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300 flex items-center gap-2">
@@ -233,13 +237,12 @@
                                 <button @click="shareToLine" class="px-6 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2">
                                     <i class="fas fa-paper-plane"></i> 🚀 推播分享
                                 </button>
-                                <button @click="saveToWorker" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
-                                    {{ isSaving ? '同步中...' : '儲存變更' }}
+                                <button @click="saveToGAS" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
+                                    {{ isSaving ? '同步中...' : '儲存到雲端' }}
                                 </button>
                             </div>
                         </div>
 
-                        <!-- 專案選擇器（如果正在編輯現有專案） -->
                         <div v-if="currentProjectId" class="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
@@ -257,7 +260,6 @@
 
                         <!-- 編輯器內容 -->
                         <div v-if="flexData.type === 'standard'" class="space-y-6">
-                            <!-- 原本的編輯器內容 -->
                             <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
                                 <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-image mr-2 text-line-green"></i> 視覺內容設定</h4>
                                 <div class="space-y-4">
@@ -286,7 +288,6 @@
                         </div>
 
                         <div v-if="flexData.type === 'video'" class="space-y-6">
-                            <!-- 原本的影片編輯器內容 -->
                             <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
                                 <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-id-card mr-2 text-line-green"></i> 影片與名片 Header 設定</h4>
                                 <div class="grid grid-cols-2 gap-4">
@@ -340,7 +341,6 @@
 
                 <!-- 右側：手機預覽區 -->
                 <div class="w-[360px] flex-shrink-0 bg-gray-50 flex items-center justify-center py-8 shadow-inner overflow-y-auto no-scrollbar">
-                    <!-- 原本的預覽區 -->
                     <div class="flex flex-col items-center gap-4">
                         <div class="preview-window no-scrollbar shadow-2xl">
                             <div class="p-3 border-b border-gray-800 bg-[#1A1B1E] flex items-center gap-2 sticky top-0 z-50">
@@ -453,8 +453,14 @@
                         </div>
                     </div>
                     
+                    <!-- 載入中狀態 -->
+                    <div v-if="loadingProjects" class="text-center py-12">
+                        <div class="spinner mx-auto mb-4"></div>
+                        <p class="text-gray-500">載入專案中...</p>
+                    </div>
+                    
                     <!-- 專案列表 -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div v-for="project in filteredProjects" :key="project.id" 
                              class="project-card">
                             <div class="p-5">
@@ -491,7 +497,7 @@
                     </div>
                     
                     <!-- 無專案時的提示 -->
-                    <div v-if="projects.length === 0" class="text-center py-16">
+                    <div v-if="!loadingProjects && projects.length === 0" class="text-center py-16">
                         <i class="fas fa-box-open text-5xl text-gray-300 mb-4"></i>
                         <h4 class="text-xl font-bold text-gray-500 mb-2">尚無專案</h4>
                         <p class="text-gray-400 mb-6">開始創建您的第一個插件專案吧！</p>
@@ -588,10 +594,9 @@
     const { createApp, ref, computed, onMounted } = Vue;
 
     // --- 設定區 ---
-    const WORKER_API_URL = "https://lineoa.fangwl591021.workers.dev/";
-    const GOOGLE_SHEET_ID = "1qQjIMf8WDAuklmqz_sqfQoDysttMETJqcy69mdkqXyM";
-    const GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json`;
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxX3qfauYsWk4RFhI0pP_cHcM1fMbhcacEj_MPXqIEl8PqbbmIT6Fd4sOkfV8T-sF4-/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_ID/exec"; // 替換為您的 GAS 部署網址
+    const DEFAULT_SPREADSHEET_ID = "1qQjIMf8WDAuklmqz_sqfQoDysttMETJqcy69mdkqXyM";
+    const LINE_CHANNEL_ACCESS_TOKEN = "YOUR_LINE_CHANNEL_ACCESS_TOKEN"; // 替換為您的 LINE Channel Access Token
 
     createApp({
         setup() {
@@ -603,12 +608,14 @@
             const isSaving = ref(false);
             const isLoggedIn = ref(false);
             const isInIframe = ref(false);
+            const liffProfile = ref(null);
             
             // 專案相關狀態
             const showNewProjectModal = ref(false);
             const showDeleteConfirm = ref(false);
             const projectSearch = ref('');
             const projects = ref([]);
+            const loadingProjects = ref(false);
             const currentProjectId = ref(null);
             const currentProjectName = ref('');
             const projectToDelete = ref(null);
@@ -620,13 +627,20 @@
                 type: 'standard'
             });
 
-            onMounted(() => {
+            onMounted(async () => {
                 isInIframe.value = window.self !== window.top;
                 if (typeof liff !== 'undefined') {
-                    liff.init({ liffId: "2008541971-XPIDtaaj" }).then(() => {
+                    try {
+                        await liff.init({ liffId: "2008541971-XPIDtaaj" });
                         console.log("LIFF Ready");
                         isLoggedIn.value = liff.isLoggedIn();
-                    }).catch(err => console.error("LIFF Init failed", err));
+                        
+                        if (isLoggedIn.value) {
+                            liffProfile.value = await liff.getProfile();
+                        }
+                    } catch (err) {
+                        console.error("LIFF Init failed", err);
+                    }
                 }
                 // 載入專案列表
                 loadProjects();
@@ -726,7 +740,6 @@
             });
 
             const generatedJson = computed(() => {
-                // 保持原有的 JSON 生成邏輯
                 if (flexData.value.type === 'standard') {
                     const contents = [
                         { 
@@ -1079,6 +1092,7 @@
                 else liff.login();
             };
 
+            // 直接推播（使用 LIFF shareTargetPicker）
             const shareToLine = () => {
                 if (!liff.isLoggedIn()) { 
                     alert("請先登入 LINE。"); 
@@ -1096,29 +1110,67 @@
                 .catch(err => alert("發送失敗：" + err));
             };
 
+            // 儲存到 GAS（包含推播功能）
+            const saveToGAS = async () => {
+                if (!liffProfile.value) {
+                    alert("請先登入 LINE");
+                    liffLogin();
+                    return;
+                }
+
+                isSaving.value = true;
+                try {
+                    const payload = {
+                        action: 'savePlugin',
+                        spreadsheetId: DEFAULT_SPREADSHEET_ID,
+                        accessToken: LINE_CHANNEL_ACCESS_TOKEN,
+                        userId: liffProfile.value.userId,
+                        type: flexData.value.type,
+                        name: flexData.value.title || flexData.value.headerName || '未命名專案',
+                        params: flexData.value,
+                        flexPayload: {
+                            type: 'flex',
+                            altText: 'LINEOA 插件訊息',
+                            contents: generatedJson.value
+                        }
+                    };
+
+                    const response = await fetch(GAS_API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    alert('數據已儲存到 Google Sheets！');
+                    
+                } catch (error) {
+                    console.error('儲存失敗:', error);
+                    alert('儲存失敗，請檢查控制台');
+                } finally {
+                    isSaving.value = false;
+                }
+            };
+
             // 載入專案列表
             const loadProjects = async () => {
+                loadingProjects.value = true;
                 try {
-                    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getProjects`);
+                    const response = await fetch(`${GAS_API_URL}?action=getProjects&spreadsheetId=${DEFAULT_SPREADSHEET_ID}`);
                     const data = await response.json();
                     if (data.success) {
                         projects.value = data.projects;
                     } else {
                         console.error('載入專案失敗:', data.message);
+                        projects.value = [];
                     }
                 } catch (error) {
                     console.error('載入專案時發生錯誤:', error);
-                    // 模擬數據用於演示
-                    projects.value = [
-                        {
-                            id: '1',
-                            name: '產品介紹卡片',
-                            description: '用於展示公司產品的 Flex Message',
-                            type: 'standard',
-                            data: flexData.value,
-                            created_at: new Date().toISOString()
-                        }
-                    ];
+                    projects.value = [];
+                } finally {
+                    loadingProjects.value = false;
                 }
             };
 
@@ -1131,8 +1183,9 @@
 
                 isSaving.value = true;
                 try {
-                    const projectData = {
-                        id: isUpdate ? currentProjectId.value : null,
+                    const payload = {
+                        action: isUpdate ? 'updateProject' : 'createProject',
+                        spreadsheetId: DEFAULT_SPREADSHEET_ID,
                         name: isUpdate ? currentProjectName.value : newProject.value.name,
                         description: newProject.value.description,
                         type: flexData.value.type,
@@ -1140,39 +1193,34 @@
                         flex_json: JSON.stringify(generatedJson.value)
                     };
 
-                    const action = isUpdate ? 'updateProject' : 'createProject';
-                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    if (isUpdate) {
+                        payload.id = currentProjectId.value;
+                    }
+
+                    const response = await fetch(GAS_API_URL, {
                         method: 'POST',
+                        mode: 'no-cors',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            action: action,
-                            ...projectData
-                        })
+                        body: JSON.stringify(payload)
                     });
 
-                    const result = await response.json();
+                    alert(isUpdate ? '專案更新成功！' : '專案儲存成功！');
                     
-                    if (result.success) {
-                        alert(isUpdate ? '專案更新成功！' : '專案儲存成功！');
-                        
-                        if (!isUpdate) {
-                            currentProjectId.value = result.id;
-                            currentProjectName.value = newProject.value.name;
-                            showNewProjectModal.value = false;
-                            newProject.value = {
-                                name: '',
-                                description: '',
-                                type: 'standard'
-                            };
-                        }
-                        
-                        loadProjects();
-                        switchTab('projects');
-                    } else {
-                        alert('儲存失敗: ' + result.message);
+                    if (!isUpdate) {
+                        currentProjectId.value = Date.now().toString(); // 臨時 ID
+                        currentProjectName.value = newProject.value.name;
+                        showNewProjectModal.value = false;
+                        newProject.value = {
+                            name: '',
+                            description: '',
+                            type: 'standard'
+                        };
                     }
+                    
+                    loadProjects();
+                    switchTab('projects');
                 } catch (error) {
                     console.error('儲存專案時發生錯誤:', error);
                     alert('儲存失敗，請稍後再試');
@@ -1192,7 +1240,6 @@
                         currentProjectId.value = project.id;
                         currentProjectName.value = project.name;
                         
-                        // 切換到編輯頁面
                         currentTab.value = 'messages';
                         currentSubTab.value = project.type === 'video' ? 'video' : 'single';
                         
@@ -1212,31 +1259,28 @@
 
             const confirmDelete = async () => {
                 try {
-                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    const payload = {
+                        action: 'deleteProject',
+                        spreadsheetId: DEFAULT_SPREADSHEET_ID,
+                        id: projectToDelete.value
+                    };
+
+                    await fetch(GAS_API_URL, {
                         method: 'POST',
+                        mode: 'no-cors',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            action: 'deleteProject',
-                            id: projectToDelete.value
-                        })
+                        body: JSON.stringify(payload)
                     });
 
-                    const result = await response.json();
+                    alert('專案刪除成功！');
                     
-                    if (result.success) {
-                        alert('專案刪除成功！');
-                        
-                        // 如果刪除的是當前正在編輯的專案，清除狀態
-                        if (currentProjectId.value === projectToDelete.value) {
-                            clearCurrentProject();
-                        }
-                        
-                        loadProjects();
-                    } else {
-                        alert('刪除失敗: ' + result.message);
+                    if (currentProjectId.value === projectToDelete.value) {
+                        clearCurrentProject();
                     }
+                    
+                    loadProjects();
                 } catch (error) {
                     console.error('刪除專案時發生錯誤:', error);
                     alert('刪除失敗，請稍後再試');
@@ -1250,7 +1294,6 @@
             const clearCurrentProject = () => {
                 currentProjectId.value = null;
                 currentProjectName.value = '';
-                // 重置為預設值
                 flexData.value = {
                     type: 'standard', 
                     imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
@@ -1263,62 +1306,51 @@
                 };
             };
 
-            // 分享專案
+            // 推播專案
             const shareProject = async (project) => {
+                if (!liffProfile.value) {
+                    alert("請先登入 LINE");
+                    liffLogin();
+                    return;
+                }
+
                 try {
-                    const flexJson = typeof project.flex_json === 'string' ? 
-                        JSON.parse(project.flex_json) : project.flex_json;
-                    
-                    if (!liff.isLoggedIn()) { 
-                        alert("請先登入 LINE。"); 
-                        liffLogin(); 
-                        return; 
-                    }
-                    
-                    liff.shareTargetPicker([{ 
-                        type: "flex", 
-                        altText: `分享專案: ${project.name}`, 
-                        contents: flexJson
-                    }])
-                    .then(res => { 
-                        if (res) alert("專案推播成功！"); 
-                    })
-                    .catch(err => alert("推播失敗：" + err));
+                    const payload = {
+                        action: 'pushProject',
+                        spreadsheetId: DEFAULT_SPREADSHEET_ID,
+                        accessToken: LINE_CHANNEL_ACCESS_TOKEN,
+                        id: project.id,
+                        userId: liffProfile.value.userId
+                    };
+
+                    const response = await fetch(GAS_API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    alert('專案推播請求已發送！');
                 } catch (error) {
-                    console.error('分享專案時發生錯誤:', error);
-                    alert('分享失敗');
+                    console.error('推播專案時發生錯誤:', error);
+                    alert('推播失敗');
                 }
             };
 
             // 格式化日期
             const formatDate = (dateString) => {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('zh-TW', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                });
-            };
-
-            // 原有的儲存到 Worker 方法
-            const saveToWorker = async () => {
-                isSaving.value = true;
+                if (!dateString) return '無日期';
                 try {
-                    const response = await fetch(WORKER_API_URL, {
-                        method: "POST",
-                        body: JSON.stringify({
-                            type: flexData.value.type,
-                            name: flexData.value.title || flexData.value.headerName,
-                            params: flexData.value,
-                            flexPayload: generatedJson.value
-                        })
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('zh-TW', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
                     });
-                    const res = await response.json();
-                    alert(res.message);
-                } catch (err) {
-                    alert("儲存成功！");
-                } finally {
-                    isSaving.value = false;
+                } catch (e) {
+                    return '日期格式錯誤';
                 }
             };
 
@@ -1331,6 +1363,7 @@
                 templates, 
                 projects,
                 projectSearch,
+                loadingProjects,
                 newProject,
                 currentProjectId,
                 currentProjectName,
@@ -1350,7 +1383,7 @@
                 addButton, 
                 removeButton, 
                 copyJson, 
-                saveToWorker, 
+                saveToGAS, 
                 shareToLine,
                 loadProjects,
                 saveProject,
