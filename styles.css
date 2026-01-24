@@ -1,4 +1,4 @@
-/* 基礎樣式 */
+/* 基本樣式 */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { 
     font-family: 'Noto Sans TC', sans-serif; 
@@ -8,29 +8,28 @@ body {
 }
 #app { width: 100%; height: 100vh; overflow: hidden; }
 
-/* 顏色類 */
-.line-green { color: #00B900; }
-.bg-line-green { background-color: #00B900; }
-
 /* Sidebar 樣式 */
 .sidebar-container { 
     background-color: #1e2124; 
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    transition: width 0.3s ease; 
     height: 100vh; 
     display: flex; 
     flex-direction: column; 
     flex-shrink: 0; 
     overflow: hidden; 
-    z-index: 50;
 }
-.w-expanded { width: 256px !important; }
-.w-collapsed { width: 80px !important; }
+.w-expanded { width: 256px; }
+.w-collapsed { width: 80px; }
 .sidebar-item-active { 
     background-color: #374151; 
     color: white; 
     border-left: 4px solid #00B900; 
 }
-.sidebar-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.sidebar-transition { transition: all 0.3s ease; }
 
 /* 工具類 */
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* 顏色 */
+.line-green { color: #00B900; }
+.bg-line-green { background-color: #00B900; }
