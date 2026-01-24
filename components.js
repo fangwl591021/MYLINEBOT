@@ -434,4 +434,147 @@ const StandardPreview = {
     },
     methods: {
         handleButtonClick(url) {
-           
+            if (url && url !== 'https://example.com') {
+                window.open(url, '_blank');
+            }
+        },
+        handleImageError(e) {
+            e.target.src = this.defaultImage;
+        }
+    }
+};
+
+// 側邊欄組件
+const Sidebar = {
+    name: 'Sidebar',
+    props: ['currentTab', 'currentSubTab', 'isCollapsed'],
+    template: `
+        <aside :class="isCollapsed ? 'w-collapsed' : 'w-expanded'" 
+               class="sidebar-container text-gray-400 shadow-2xl">
+            <div class="h-16 flex items-center border-b border-gray-700 overflow-hidden flex-shrink-0 sidebar-transition" 
+                 :class="isCollapsed ? 'justify-center px-0' : 'px-6 justify-start'">
+                <i class="fab fa-line text-3xl line-green"></i>
+                <span v-if="!isCollapsed" class="text-white text-xl font-bold ml-4 tracking-tighter whitespace-nowrap uppercase font-mono opacity-0 transition-opacity duration-300" 
+                      :class="{'opacity-100': !isCollapsed}">
+                    LINEOA PLUG
+                </span>
+            </div>
+            
+            <nav class="mt-6 flex-grow overflow-y-auto no-scrollbar whitespace-nowrap">
+                <a href="#" @click="switchTab('dashboard')" 
+                   :class="{'sidebar-item-active': currentTab === 'dashboard'}" 
+                   class="flex items-center py-4 hover:bg-gray-700 transition-colors sidebar-transition"
+                   :style="getItemStyle()">
+                    <i class="fas fa-chart-pie w-8 text-lg text-center flex-shrink-0"></i>
+                    <span v-if="!isCollapsed" class="ml-2 font-medium opacity-0 transition-opacity duration-300"
+                          :class="{'opacity-100': !isCollapsed}">
+                        儀表板總覽
+                    </span>
+                </a>
+
+                <div>
+                    <button @click="toggleSidebarMenu" 
+                            :class="{'text-white': currentTab === 'messages'}"
+                            class="w-full flex items-center py-4 hover:bg-gray-700 focus:outline-none overflow-hidden sidebar-transition"
+                            :style="getItemStyle()">
+                        <i class="fas fa-layer-group w-8 text-lg text-center flex-shrink-0"></i>
+                        <template v-if="!isCollapsed">
+                            <span class="ml-2 font-medium opacity-0 transition-opacity duration-300"
+                                  :class="{'opacity-100': !isCollapsed}">
+                                插件開發管理
+                            </span>
+                            <i class="fas fa-chevron-down text-[10px] ml-auto transition-transform sidebar-transition"
+                               :class="{'rotate-180': isMessageMenuOpen}"></i>
+                        </template>
+                    </button>
+                    
+                    <div v-if="isMessageMenuOpen && !isCollapsed" class="bg-black bg-opacity-20 py-2 sidebar-transition">
+                        <a href="#" @click="switchSubTab('messages', 'single')" 
+                           :class="{'submenu-item-active': currentSubTab === 'single'}" 
+                           class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors sidebar-transition">
+                            單頁文章 Flex
+                        </a>
+                        <a href="#" @click="switchSubTab('messages', 'video')" 
+                           :class="{'submenu-item-active': currentSubTab === 'video'}" 
+                           class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors sidebar-transition">
+                            影片名片插件
+                        </a>
+                        <a href="#" @click="switchSubTab('messages', 'ecommerce')" 
+                           :class="{'submenu-item-active': currentSubTab === 'ecommerce'}" 
+                           class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors sidebar-transition">
+                            電商型插件
+                        </a>
+                    </div>
+                </div>
+
+                <a href="#" @click="switchTab('templates')" 
+                   :class="{'sidebar-item-active': currentTab === 'templates'}"
+                   class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
+                   :style="getItemStyle()">
+                    <i class="fas fa-folder-open w-8 text-lg text-center flex-shrink-0"></i>
+                    <span v-if="!isCollapsed" class="ml-2 font-medium opacity-0 transition-opacity duration-300"
+                          :class="{'opacity-100': !isCollapsed}">
+                        插件模板庫
+                    </span>
+                </a>
+
+                <a href="#" @click="switchTab('projects')" 
+                   :class="{'sidebar-item-active': currentTab === 'projects'}"
+                   class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
+                   :style="getItemStyle()">
+                    <i class="fas fa-box w-8 text-lg text-center flex-shrink-0"></i>
+                    <span v-if="!isCollapsed" class="ml-2 font-medium opacity-0 transition-opacity duration-300"
+                          :class="{'opacity-100': !isCollapsed}">
+                        專案管理
+                    </span>
+                </a>
+            </nav>
+            
+            <button @click="$emit('toggle-sidebar')" 
+                    class="p-4 w-full flex items-center justify-center border-t border-gray-700 hover:text-white transition-colors text-gray-500 bg-gray-900 bg-opacity-30 sidebar-transition">
+                <i class="fas sidebar-transition" :class="isCollapsed ? 'fa-indent text-xl' : 'fa-outdent text-xl'"></i>
+                <span v-if="!isCollapsed" class="ml-3 text-xs font-bold uppercase tracking-widest opacity-0 transition-opacity duration-300"
+                      :class="{'opacity-100': !isCollapsed}">
+                    收合左側欄
+                </span>
+            </button>
+        </aside>
+    `,
+    data() {
+        return {
+            isMessageMenuOpen: true
+        };
+    },
+    methods: {
+        getItemStyle() {
+            return this.isCollapsed ? 
+                'justify-content: center; padding-left: 0; padding-right: 0;' : 
+                'padding-left: 1.5rem; padding-right: 1.5rem;';
+        },
+        toggleSidebarMenu() {
+            if (this.isCollapsed) {
+                this.$emit('toggle-sidebar');
+                setTimeout(() => {
+                    this.isMessageMenuOpen = true;
+                }, 100);
+            } else {
+                this.isMessageMenuOpen = !this.isMessageMenuOpen;
+            }
+        },
+        switchTab(tab) {
+            this.$emit('switch-tab', tab);
+        },
+        switchSubTab(tab, subTab) {
+            this.$emit('switch-sub-tab', tab, subTab);
+        }
+    }
+};
+
+// 暴露到全局
+window.Components = {
+    BusinessCardEditor,
+    BusinessCardPreview,
+    StandardEditor,
+    StandardPreview,
+    Sidebar
+};
