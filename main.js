@@ -1,5 +1,3 @@
-// ========== 主應用程式 ==========
-
 document.addEventListener('DOMContentLoaded', function() {
     const { createApp, ref, computed, onMounted } = Vue;
     
@@ -37,322 +35,23 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
     
-    // 工具函數
-    function generateStandardJson(data) {
-        const contents = [
-            { 
-                type: "image", 
-                url: data.imageUrl || "https://via.placeholder.com/800x520?text=Image", 
-                size: "full", 
-                aspectRatio: data.aspectRatio || "20:13", 
-                animated: true 
-            }, 
-            { 
-                type: "text", 
-                text: data.title || "標題", 
-                weight: "bold", 
-                size: "xl", 
-                align: "center", 
-                margin: "sm" 
-            }, 
-            { 
-                type: "text", 
-                text: data.subtitle || "內容區", 
-                size: "sm", 
-                margin: "sm", 
-                offsetStart: "5px", 
-                wrap: true 
-            }
-        ];
-        
-        const flex = {
-            type: "bubble",
-            body: { 
-                type: "box", 
-                layout: "vertical", 
-                paddingAll: "0px", 
-                contents: contents 
-            }
-        };
-        
-        if (data.buttons && data.buttons.length > 0) {
-            flex.footer = {
-                type: "box",
-                layout: "vertical",
-                spacing: "sm",
-                contents: data.buttons.map(b => ({
-                    type: "button",
-                    style: "primary",
-                    color: b.color || "#00B900",
-                    height: "sm",
-                    action: {
-                        type: "uri",
-                        label: b.label || "按鈕",
-                        uri: b.uri || "https://example.com"
-                    }
-                }))
-            };
-        }
-        
-        return flex;
-    }
-    
-    function generateBusinessCardJson(cardData) {
-        const { 
-            headerName, 
-            headerTitle, 
-            headerDescription, 
-            headerImg,
-            videoUrl,
-            previewUrl,
-            gridButtons = [],
-            videoFooterButtons = []
-        } = cardData;
-
-        // 建立網格佈局
-        const gridContents = [];
-        const gridPairs = [];
-        
-        for (let i = 0; i < Math.min(4, gridButtons.length); i += 2) {
-            const pair = gridButtons.slice(i, i + 2);
-            if (pair.length > 0) {
-                gridPairs.push(pair);
-            }
-        }
-
-        gridPairs.forEach((pair) => {
-            const row = {
-                type: "box",
-                layout: "horizontal",
-                spacing: "sm",
-                contents: pair.map((btn) => ({
-                    type: "box",
-                    layout: "vertical",
-                    paddingAll: "12px",
-                    backgroundColor: "#2A2C31",
-                    cornerRadius: "12px",
-                    action: {
-                        type: "uri",
-                        label: btn.label,
-                        uri: btn.uri
-                    },
-                    contents: [
-                        {
-                            type: "text",
-                            text: btn.emoji || "🌟",
-                            size: "xl",
-                            align: "center"
-                        },
-                        {
-                            type: "text",
-                            text: btn.label || "按鈕",
-                            size: "sm",
-                            align: "center",
-                            color: "#E6E6E6"
-                        }
-                    ],
-                    flex: 1,
-                    margin: "none"
-                }))
-            };
-            
-            gridContents.push(row);
-        });
-
-        // 建立底部按鈕
-        const footerButtons = videoFooterButtons.map((btn, index) => ({
-            type: "button",
-            style: index === 0 ? "primary" : "secondary",
-            color: index === 0 ? (btn.color || "#C9A24D") : undefined,
-            height: "sm",
-            action: {
-                type: "uri",
-                label: btn.label || "按鈕",
-                uri: btn.uri || "#"
-            }
-        }));
-
-        return {
-            type: "bubble",
-            size: "mega",
-            header: {
-                type: "box",
-                layout: "horizontal",
-                spacing: "md",
-                paddingAll: "8px",
-                backgroundColor: "#1A1B1E",
-                contents: [
-                    {
-                        type: "image",
-                        url: headerImg || "https://via.placeholder.com/40x40?text=Avatar",
-                        size: "xs",
-                        aspectRatio: "1:1",
-                        aspectMode: "cover",
-                        gravity: "center"
-                    },
-                    {
-                        type: "box",
-                        layout: "vertical",
-                        spacing: "xs",
-                        flex: 3,
-                        contents: [
-                            {
-                                type: "text",
-                                text: headerName || "未設定姓名",
-                                weight: "bold",
-                                size: "lg",
-                                color: "#D4AF37"
-                            },
-                            {
-                                type: "text",
-                                text: headerTitle || "未設定職稱",
-                                size: "sm",
-                                color: "#E6E6E6"
-                            },
-                            {
-                                type: "text",
-                                text: headerDescription || "未設定描述",
-                                size: "xs",
-                                color: "#A0A0A0",
-                                wrap: true
-                            }
-                        ]
-                    }
-                ]
-            },
-            hero: {
-                type: "video",
-                url: videoUrl || "",
-                previewUrl: previewUrl || "https://via.placeholder.com/800x500?text=Preview",
-                aspectRatio: "800:500",
-                altContent: {
-                    type: "image",
-                    url: previewUrl || "https://via.placeholder.com/800x500?text=Preview",
-                    size: "full",
-                    aspectRatio: "800:500",
-                    aspectMode: "cover"
-                }
-            },
-            body: {
-                type: "box",
-                layout: "vertical",
-                paddingAll: "8px",
-                contents: [
-                    {
-                        type: "box",
-                        layout: "vertical",
-                        spacing: "sm",
-                        paddingAll: "12px",
-                        backgroundColor: "#1F2024",
-                        cornerRadius: "14px",
-                        contents: gridContents.length > 0 ? gridContents : [
-                            {
-                                type: "text",
-                                text: "請設定網格按鈕",
-                                align: "center",
-                                color: "#666666"
-                            }
-                        ]
-                    }
-                ]
-            },
-            footer: {
-                type: "box",
-                layout: "vertical",
-                spacing: "sm",
-                paddingAll: "8px",
-                contents: footerButtons.length > 0 ? footerButtons : [
-                    {
-                        type: "text",
-                        text: "請設定底部按鈕",
-                        align: "center",
-                        color: "#666666"
-                    }
-                ]
-            },
-            styles: {
-                body: {
-                    backgroundColor: "#0F0F10"
-                },
-                footer: {
-                    backgroundColor: "#0F0F10"
-                }
-            }
-        };
-    }
-    
-    // 簡單的側邊欄組件
-    const Sidebar = {
-        name: 'Sidebar',
-        props: ['currentTab', 'currentSubTab', 'isCollapsed'],
-        template: `
-            <aside :class="isCollapsed ? 'w-collapsed' : 'w-expanded'" 
-                   class="sidebar-container text-gray-400 shadow-2xl">
-                <div class="h-16 flex items-center border-b border-gray-700 overflow-hidden flex-shrink-0 sidebar-transition" 
-                     :class="isCollapsed ? 'justify-center px-0' : 'px-6 justify-start'">
-                    <i class="fab fa-line text-3xl line-green"></i>
-                    <span v-if="!isCollapsed" class="text-white text-xl font-bold ml-4 tracking-tighter whitespace-nowrap uppercase font-mono">
-                        LINEOA PLUG
-                    </span>
-                </div>
-                
-                <nav class="mt-6 flex-grow overflow-y-auto no-scrollbar whitespace-nowrap">
-                    <a href="#" @click="switchTab('messages')" 
-                       :class="{'sidebar-item-active': currentTab === 'messages'}" 
-                       class="flex items-center py-4 hover:bg-gray-700 transition-colors sidebar-transition"
-                       :style="getItemStyle()">
-                        <i class="fas fa-layer-group w-8 text-lg text-center flex-shrink-0"></i>
-                        <span v-if="!isCollapsed" class="ml-2 font-medium">
-                            插件開發管理
-                        </span>
-                    </a>
-
-                    <a href="#" @click="switchTab('templates')" 
-                       :class="{'sidebar-item-active': currentTab === 'templates'}"
-                       class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
-                       :style="getItemStyle()">
-                        <i class="fas fa-folder-open w-8 text-lg text-center flex-shrink-0"></i>
-                        <span v-if="!isCollapsed" class="ml-2 font-medium">
-                            插件模板庫
-                        </span>
-                    </a>
-
-                    <a href="#" @click="switchTab('projects')" 
-                       :class="{'sidebar-item-active': currentTab === 'projects'}"
-                       class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
-                       :style="getItemStyle()">
-                        <i class="fas fa-box w-8 text-lg text-center flex-shrink-0"></i>
-                        <span v-if="!isCollapsed" class="ml-2 font-medium">
-                            專案管理
-                        </span>
-                    </a>
-                </nav>
-                
-                <button @click="$emit('toggle-sidebar')" 
-                        class="p-4 w-full flex items-center justify-center border-t border-gray-700 hover:text-white transition-colors text-gray-500 bg-gray-900 bg-opacity-30 sidebar-transition">
-                    <i class="fas" :class="isCollapsed ? 'fa-indent text-xl' : 'fa-outdent text-xl'"></i>
-                    <span v-if="!isCollapsed" class="ml-3 text-xs font-bold uppercase tracking-widest">
-                        收合左側欄
-                    </span>
-                </button>
-            </aside>
-        `,
-        methods: {
-            getItemStyle() {
-                return this.isCollapsed ? 
-                    'justify-content: center; padding-left: 0; padding-right: 0;' : 
-                    'padding-left: 1.5rem; padding-right: 1.5rem;';
-            },
-            switchTab(tab) {
-                this.$emit('switch-tab', tab);
-            }
-        }
+    const defaultEcommerceData = {
+        type: 'ecommerce',
+        title: '電商商品',
+        description: '商品描述內容',
+        imageUrl: 'https://via.placeholder.com/300x200?text=Ecommerce',
+        price: '$ 99.99'
     };
     
     // 創建主應用
     const app = createApp({
         components: {
-            Sidebar
+            Sidebar: window.Components.Sidebar,
+            StandardEditor: window.Components.StandardEditor,
+            BusinessCardEditor: window.Components.BusinessCardEditor,
+            EcommerceEditor: window.Components.EcommerceEditor,
+            StandardPreview: window.Components.StandardPreview,
+            BusinessCardPreview: window.Components.BusinessCardPreview
         },
         
         template: `
@@ -364,6 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     :is-collapsed="isSidebarCollapsed"
                     @toggle-sidebar="toggleSidebar"
                     @switch-tab="switchTab"
+                    @switch-sub-tab="switchSubTab"
                 />
                 
                 <!-- 主要內容區 -->
@@ -383,72 +83,123 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </header>
                     
-                    <!-- 主內容 -->
-                    <div class="flex-grow overflow-auto p-8">
-                        <div class="max-w-6xl mx-auto">
-                            <div v-if="currentTab === 'messages'" class="space-y-6">
-                                <h3 class="text-2xl font-bold text-gray-800 mb-4">插件開發管理平台</h3>
-                                <p class="text-gray-600 mb-6">選擇您要創建的插件類型：</p>
-                                
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div class="bg-white rounded-xl shadow-lg p-6">
-                                        <div class="flex items-center mb-4">
-                                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                                                <i class="fas fa-file-alt text-blue-600 text-xl"></i>
-                                            </div>
-                                            <div>
-                                                <h4 class="font-bold text-gray-800">文章型 Flex</h4>
-                                                <p class="text-sm text-gray-500">創建單頁文章訊息</p>
-                                            </div>
+                    <!-- 動態內容 -->
+                    <div class="flex-grow overflow-hidden flex">
+                        <!-- 插件開發頁面 -->
+                        <div v-if="currentTab === 'messages'" class="flex w-full overflow-hidden">
+                            <!-- 編輯器區域 -->
+                            <div class="flex-grow overflow-y-auto p-8 bg-white shadow-inner border-r no-scrollbar">
+                                <div class="max-w-4xl mx-auto">
+                                    <!-- 頂部按鈕 -->
+                                    <div class="flex items-center justify-between mb-8">
+                                        <div>
+                                            <h3 class="text-2xl font-bold text-gray-800">
+                                                {{ flexData.type === 'video' ? '影片名片開發' : 
+                                                   flexData.type === 'ecommerce' ? '電商型插件開發' : '文章型 Flex 開發' }}
+                                            </h3>
+                                            <p class="text-sm text-gray-400 mt-1">編輯參數後，可儲存為專案或直接推播至 LINE。</p>
                                         </div>
-                                        <button @click="switchSubTab('single')" 
-                                                class="w-full mt-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                                            開始創建
-                                        </button>
+                                        <div class="flex gap-2">
+                                            <button @click="shareToLine" class="px-6 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2">
+                                                <i class="fas fa-paper-plane"></i> 🚀 直接推播
+                                            </button>
+                                        </div>
                                     </div>
                                     
-                                    <div class="bg-white rounded-xl shadow-lg p-6">
-                                        <div class="flex items-center mb-4">
-                                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-                                                <i class="fas fa-video text-purple-600 text-xl"></i>
-                                            </div>
-                                            <div>
-                                                <h4 class="font-bold text-gray-800">影片名片插件</h4>
-                                                <p class="text-sm text-gray-500">創建影片名片訊息</p>
-                                            </div>
-                                        </div>
-                                        <button @click="switchSubTab('video')" 
-                                                class="w-full mt-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
-                                            開始創建
-                                        </button>
-                                    </div>
+                                    <!-- 動態編輯器 -->
+                                    <StandardEditor 
+                                        v-if="flexData.type === 'standard'"
+                                        :data="flexData"
+                                        :chat-message="chatMessage"
+                                        @update:data="updateFlexData"
+                                        @update:chat-message="updateChatMessage"
+                                    />
                                     
-                                    <div class="bg-white rounded-xl shadow-lg p-6">
-                                        <div class="flex items-center mb-4">
-                                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
-                                                <i class="fas fa-shopping-cart text-orange-600 text-xl"></i>
-                                            </div>
-                                            <div>
-                                                <h4 class="font-bold text-gray-800">電商型插件</h4>
-                                                <p class="text-sm text-gray-500">創建電商型訊息</p>
-                                            </div>
+                                    <BusinessCardEditor 
+                                        v-else-if="flexData.type === 'video'"
+                                        :data="flexData"
+                                        :chat-message="chatMessage"
+                                        @update:data="updateFlexData"
+                                        @update:chat-message="updateChatMessage"
+                                    />
+                                    
+                                    <EcommerceEditor 
+                                        v-else-if="flexData.type === 'ecommerce'"
+                                        :data="flexData"
+                                        :chat-message="chatMessage"
+                                        @update:data="updateFlexData"
+                                        @update:chat-message="updateChatMessage"
+                                    />
+                                    
+                                    <!-- JSON 輸出 -->
+                                    <div class="mt-12 mb-20">
+                                        <div class="flex items-center justify-between mb-3 px-2">
+                                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                <i class="fas fa-code mr-2"></i>Raw Flex JSON Data
+                                            </span>
+                                            <button @click="copyJson" class="text-[10px] text-line-green font-bold hover:underline uppercase">
+                                                Copy JSON
+                                            </button>
                                         </div>
-                                        <button @click="switchSubTab('ecommerce')" 
-                                                class="w-full mt-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
-                                            開始創建
-                                        </button>
+                                        <div class="bg-[#1e2124] rounded-2xl p-6 border border-gray-700 shadow-xl overflow-hidden">
+                                            <pre class="text-[11px] text-green-400 font-mono leading-relaxed h-48 overflow-y-auto no-scrollbar">
+                                                {{ generatedJson }}
+                                            </pre>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div v-else-if="currentTab === 'templates'" class="space-y-6">
-                                <h3 class="text-2xl font-bold text-gray-800 mb-4">插件模板庫</h3>
-                                <p class="text-gray-600">模板庫功能開發中...</p>
+                            <!-- 預覽區域 -->
+                            <div class="w-[360px] flex-shrink-0 bg-gray-50 flex items-center justify-center py-8 shadow-inner overflow-y-auto no-scrollbar">
+                                <div class="flex flex-col items-center gap-4">
+                                    <div class="preview-window no-scrollbar shadow-2xl">
+                                        <div class="p-3 border-b border-gray-800 bg-[#1A1B1E] flex items-center gap-2 sticky top-0 z-50">
+                                            <i class="fas fa-chevron-left text-gray-600 text-xs"></i>
+                                            <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">LINE Preview</span>
+                                        </div>
+                                        
+                                        <StandardPreview 
+                                            v-if="flexData.type === 'standard'"
+                                            :data="flexData"
+                                        />
+                                        
+                                        <BusinessCardPreview 
+                                            v-else-if="flexData.type === 'video'"
+                                            :data="flexData"
+                                        />
+                                        
+                                        <!-- 電商預覽 -->
+                                        <div v-else-if="flexData.type === 'ecommerce'" class="p-4">
+                                            <div class="flex-bubble shadow-xl">
+                                                <img :src="flexData.imageUrl" class="w-full h-40 object-cover">
+                                                <div class="p-4">
+                                                    <h3 class="font-bold text-gray-800">{{ flexData.title }}</h3>
+                                                    <p class="text-sm text-gray-600 mt-2">{{ flexData.description }}</p>
+                                                    <div class="mt-4 flex justify-between items-center">
+                                                        <span class="font-bold text-lg text-red-600">{{ flexData.price }}</span>
+                                                        <button class="px-4 py-2 bg-red-500 text-white rounded-lg">立即購買</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <div v-else-if="currentTab === 'projects'" class="space-y-6">
-                                <h3 class="text-2xl font-bold text-gray-800 mb-4">專案管理</h3>
-                                <p class="text-gray-600">專案管理功能開發中...</p>
+                        </div>
+                        
+                        <!-- 其他頁面 -->
+                        <div v-else class="w-full overflow-y-auto p-8">
+                            <div class="max-w-6xl mx-auto">
+                                <h3 class="text-2xl font-bold text-gray-800 mb-6">{{ pageTitle }}</h3>
+                                
+                                <div v-if="currentTab === 'templates'" class="space-y-6">
+                                    <p class="text-gray-600">模板庫功能開發中...</p>
+                                </div>
+                                
+                                <div v-if="currentTab === 'projects'" class="space-y-6">
+                                    <p class="text-gray-600">專案管理功能開發中...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -460,18 +211,31 @@ document.addEventListener('DOMContentLoaded', function() {
             // 狀態
             const isSidebarCollapsed = ref(false);
             const currentTab = ref('messages');
-            const currentSubTab = ref('');
+            const currentSubTab = ref('single');
             const isLoggedIn = ref(false);
             const isInIframe = ref(false);
+            const chatMessage = ref("🎉 限時優惠！精選商品特價中，點擊查看最新商品！");
+            const flexData = ref({ ...defaultStandardData });
             
             // 計算屬性
             const pageTitle = computed(() => {
                 const titles = {
+                    'dashboard': '儀表板總覽',
                     'messages': '插件開發管理平台',
                     'templates': '插件模板選擇中心',
                     'projects': '專案管理'
                 };
                 return titles[currentTab.value] || 'LINEOA 插件管理平台';
+            });
+            
+            const generatedJson = computed(() => {
+                if (flexData.value.type === 'video') {
+                    return JSON.stringify(window.Utils.generateBusinessCardJson(flexData.value), null, 2);
+                } else if (flexData.value.type === 'standard') {
+                    return JSON.stringify(window.Utils.generateStandardJson(flexData.value), null, 2);
+                } else {
+                    return JSON.stringify(flexData.value, null, 2);
+                }
             });
             
             // 方法
@@ -483,9 +247,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentTab.value = tab;
             };
             
-            const switchSubTab = (subTab) => {
+            const switchSubTab = (tab, subTab) => {
+                currentTab.value = tab;
                 currentSubTab.value = subTab;
-                alert('即將進入 ' + subTab + ' 編輯器');
+                
+                if (subTab === 'video') {
+                    flexData.value = { ...defaultBusinessCardData };
+                } else if (subTab === 'ecommerce') {
+                    flexData.value = { ...defaultEcommerceData };
+                } else {
+                    flexData.value = { ...defaultStandardData };
+                }
+            };
+            
+            const updateFlexData = (newData) => {
+                flexData.value = { ...newData };
+            };
+            
+            const updateChatMessage = (newMessage) => {
+                chatMessage.value = newMessage;
             };
             
             const liffLogin = async () => {
@@ -503,6 +283,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.error('LIFF 初始化失敗:', err);
                     }
                 }
+            };
+            
+            const shareToLine = () => {
+                if (!isLoggedIn.value) {
+                    alert('請先登入 LINE');
+                    liffLogin();
+                    return;
+                }
+                
+                alert('推播功能開發中...');
+            };
+            
+            const copyJson = () => {
+                const el = document.createElement('textarea');
+                el.value = generatedJson.value;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                alert('JSON 已複製到剪貼簿！');
             };
             
             // 初始化
@@ -539,15 +339,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentSubTab,
                 isLoggedIn,
                 isInIframe,
+                chatMessage,
+                flexData,
                 
                 // 計算屬性
                 pageTitle,
+                generatedJson,
                 
                 // 方法
                 toggleSidebar,
                 switchTab,
                 switchSubTab,
-                liffLogin
+                updateFlexData,
+                updateChatMessage,
+                liffLogin,
+                shareToLine,
+                copyJson
             };
         }
     });
