@@ -114,4 +114,105 @@ export default {
       
       // 數據
       flexData: defaultStandardData,
-      chatMessage: "🎉 限時優惠！精選商品特價
+      chatMessage: "🎉 限時優惠！精選商品特價中，點擊查看最新商品！",
+      
+      // 專案相關
+      showNewProjectModal: false,
+      showDeleteConfirm: false,
+      projectSearch: '',
+      projects: [],
+      loadingProjects: false,
+      loadError: null,
+      currentProjectId: null,
+      currentProjectName: '',
+      projectToDelete: null,
+      
+      // 新專案
+      newProject: {
+        name: '',
+        description: '',
+        type: 'standard'
+      }
+    }
+  },
+  computed: {
+    pageTitle() {
+      const titles = {
+        'dashboard': '儀表板總覽',
+        'messages': '插件開發管理平台',
+        'templates': '插件模板選擇中心',
+        'projects': '專案管理'
+      }
+      return titles[this.currentTab] || 'LINEOA 插件管理平台'
+    }
+  },
+  mounted() {
+    this.initApp()
+  },
+  methods: {
+    async initApp() {
+      this.isInIframe = window.self !== window.top
+      
+      // 初始化 LIFF
+      if (typeof liff !== 'undefined') {
+        try {
+          await liff.init({ liffId: "2008541971-XPIDtaaj" })
+          console.log("LIFF Ready")
+          this.isLoggedIn = liff.isLoggedIn()
+          
+          if (this.isLoggedIn) {
+            this.liffProfile = await liff.getProfile()
+            console.log("User Profile:", this.liffProfile)
+          }
+        } catch (err) {
+          console.error("LIFF Init failed", err)
+        }
+      }
+      
+      // 初始化圖標
+      if (window.lucide) {
+        window.lucide.createIcons()
+      }
+    },
+    
+    // 頁面切換方法
+    switchTab(tab) {
+      this.currentTab = tab
+      if (tab === 'projects') {
+        this.loadProjects()
+      }
+    },
+    
+    switchSubTab(tab, subTab) {
+      this.currentTab = tab
+      this.currentSubTab = subTab
+      this.flexData.type = subTab === 'video' ? 'video' : 
+                          subTab === 'ecommerce' ? 'ecommerce' : 'standard'
+    },
+    
+    // 數據更新方法
+    updateFlexData(newData) {
+      this.flexData = { ...this.flexData, ...newData }
+    },
+    
+    updateNewProject(newData) {
+      this.newProject = { ...this.newProject, ...newData }
+    },
+    
+    // 模板應用
+    applyTemplate(template) {
+      if (template.type === 'video') {
+        this.flexData = { ...defaultBusinessCardData, ...template.payload }
+      } else if (template.type === 'standard') {
+        this.flexData = { ...defaultStandardData, ...template.payload }
+      }
+      this.currentTab = 'messages'
+      this.currentSubTab = template.type === 'video' ? 'video' : 
+                          template.type === 'ecommerce' ? 'ecommerce' : 'single'
+    },
+    
+    // 其他方法（從原代碼複製並改寫）...
+    // liffLogin, saveProject, loadProjects, deleteProject, confirmDelete 等方法
+  }
+}
+</script>
