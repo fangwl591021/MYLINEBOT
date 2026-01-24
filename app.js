@@ -1598,9 +1598,579 @@ createApp({
       alert('JSON 已複製！'); 
     };
 
-    const generateEcommerceJson = () => {
-      return { type: 'ecommerce', message: 'JSON generation will be implemented in phase 2' };
+    // 檢查工作表狀態
+const checkSheetsStatus = async () => {
+  try {
+    const response = await fetch(`${WORKER_URL}/api/sheets/status`);
+    const data = await response.json();
+    
+    if (data.success) {
+      const missingSheets = Object.entries(data.sheets)
+        .filter(([_, exists]) => !exists)
+        .map(([name]) => name);
+      
+      if (missingSheets.length > 0) {
+        console.log('缺少工作表，正在初始化...', missingSheets);
+        await initializeSheets();
+      }
+    }
+  } catch (error) {
+    console.error('檢查工作表狀態失敗:', error);
+  }
+};
+
+// 初始化工作表
+const initializeSheets = async () => {
+  try {
+    const response = await fetch(`${WORKER_URL}/api/sheets/initialize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    console.log('工作表初始化結果:', data);
+    if (data.success) {
+      alert('Google Sheets 初始化完成！');
+    } else {
+      alert('初始化失敗: ' + (data.error || '未知錯誤'));
+    }
+  } catch (error) {
+    console.error('初始化工作表失敗:', error);
+    alert('初始化失敗，請檢查控制台');
+  }
+};
+
+// 載入專案列表 - 完整版本
+const loadProjects = async () => {
+  loadingProjects.value = true;
+  loadError.value = null;
+  
+  try {
+    console.log('開始載入專案...');
+    const response = await fetch(`${WORKER_URL}/api/projects`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('收到專案數據:', data);
+    
+    if (data && data.success) {
+      // 檢查是否有 projects 數據
+      if (data.projects && Array.isArray(data.projects)) {
+        // 過濾無效數據並格式化
+        projects.value = data.projects
+          .filter(project => project && 
+            (project.name && project.name.trim() !== '') || 
+            (project.id && project.id.toString().trim() !== '')
+          )
+          .map(project => ({
+            id: project.id || `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: project.name || `專案 ${project.id || '未命名'}`,
+            description: project.description || '',
+            type: project.type || 'standard',
+            data: project.data || '',
+            flex_json: project.flex_json || '',
+            created_at: project.created_at || new Date().toISOString(),
+            updated_at: project.updated_at || new Date().toISOString()
+          }));
+        
+        console.log(`成功載入 ${projects.value.length} 個專案`);
+      } else {
+        // 沒有專案數據
+        projects.value = [];
+        console.log('沒有找到專案數據');
+      }
+    } else {
+      console.error('API 返回失敗:', data);
+      projects.value = [];
+      
+      // 設置錯誤訊息
+      if (data && data.error) {
+        loadError.value = data.error;
+      } else {
+        loadError.value = '伺服器返回格式錯誤';
+      }
+    }
+  } catch (error) {
+    console.error('載入專案時發生錯誤:', error);
+    projects.value = [];
+    
+    // 設置錯誤訊息
+    if (error.message.includes('Failed to fetch')) {
+      loadError.value = '無法連接到伺服器，請檢查網路連線';
+    } else if (error.message.includes('HTTP')) {
+      loadError.value = `伺服器錯誤: ${error.message}`;
+    } else {
+      loadError.value = `載入失敗: ${error.message}`;
+    }
+  } finally {
+    loadingProjects.value = false;
+  }
+};
+
+// 儲存專案 - 完整版本
+const saveProject = async (isUpdate = false) => {
+  if (!newProject.value.name && !isUpdate) {
+    alert('請輸入專案名稱');
+    return;
+  }
+
+  isSaving.value = true;
+  try {
+    // 準備專案數據
+    const projectData = {
+      name: isUpdate ? currentProjectName.value : newProject.value.name,
+      description: newProject.value.description || '',
+      type: flexData.value.type,
+      data: flexData.value.type === 'ecommerce' ? JSON.stringify({
+        chatMessage: chatMessage.value,
+        ...ecomState.value
+      }) : JSON.stringify({
+        chatMessage: chatMessage.value,
+        ...flexData.value
+      }),
+      flex_json: flexData.value.type === 'ecommerce' ? 
+        JSON.stringify(generateEcommerceJson()) : 
+        JSON.stringify(generatedJson.value)
     };
+
+    // 如果是更新，添加專案ID
+    if (isUpdate) {
+      projectData.id = currentProjectId.value;
+    }
+
+    console.log('儲存專案數據:', projectData);
+
+    const endpoint = isUpdate ? '/api/projects/update' : '/api/projects/create';
+    const response = await fetch(`${WORKER_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(projectData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('儲存專案回應:', data);
+    
+    if (data.success) {
+      alert(isUpdate ? '專案更新成功！' : '專案儲存成功！');
+      
+      if (!isUpdate && data.id) {
+        currentProjectId.value = data.id;
+        currentProjectName.value = projectData.name;
+        showNewProjectModal.value = false;
+        
+        // 重置新專案表單
+        newProject.value = {
+          name: '',
+          description: '',
+          type: 'standard'
+        };
+      }
+      
+      // 重新載入專案列表
+      await loadProjects();
+      
+      if (!isUpdate) {
+        // 切換到專案管理頁面
+        currentTab.value = 'projects';
+      }
+    } else {
+      const errorMsg = data.error || data.message || '未知錯誤';
+      alert(`儲存失敗: ${errorMsg}`);
+    }
+  } catch (error) {
+    console.error('儲存專案時發生錯誤:', error);
+    alert(`儲存失敗: ${error.message}`);
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+// 載入專案 - 完整版本
+const loadProject = (project) => {
+  try {
+    console.log('載入專案:', project);
+    
+    if (!project) {
+      alert('專案數據無效');
+      return;
+    }
+    
+    // 設置當前專案
+    currentProjectId.value = project.id;
+    currentProjectName.value = project.name;
+    
+    // 根據專案類型載入數據
+    if (project.type === 'ecommerce') {
+      try {
+        const projectData = typeof project.data === 'string' ? 
+          JSON.parse(project.data) : project.data;
+        
+        if (projectData) {
+          // 載入電子商務數據
+          if (projectData.ecomState) {
+            ecomState.value = projectData.ecomState;
+          } else {
+            ecomState.value = projectData;
+          }
+          
+          // 載入聊天室訊息
+          chatMessage.value = projectData.chatMessage || 
+            projectData.chatMessage || 
+            "🎉 限時優惠！精選商品特價中，點擊查看最新商品！";
+        }
+      } catch (e) {
+        console.error('解析電子商務數據失敗:', e);
+        alert('載入電子商務數據失敗，使用預設模板');
+        // 使用預設模板
+        ecomState.value = {
+          hero: {
+            type: 'video', 
+            aspectRatio: '16:9',
+            url: "https://lihi.cc/5OXMZ", 
+            videoUrl: "https://lihi.cc/YsmAp", 
+            link: "https://line.me"
+          },
+          body: {
+            columns: 3,
+            bubbleSize: "mega", 
+            bgType: "image",
+            bgMode: "cover",
+            bgColor: "#F8F8F8",
+            bg: "https://lihi.cc/l5qqU",
+            tagBgColor: "#0D0D0D",
+            tagTextColor: "#FFFFFF",
+            items: [
+              { title: "商品 A", img: "https://lihi.cc/mwMvo", url: "https://line.me" },
+              { title: "商品 B", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+              { title: "商品 C", img: "https://lihi.cc/yRfpn", url: "https://line.me" }
+            ]
+          },
+          footer: {
+            bg: "#ffffff", 
+            textEnabled: false,
+            text: "※ 請注意：優惠商品數量有限，售完為止。",
+            textColor: "#666666",
+            textAlign: "center",
+            btn1: { label: "品牌故事", color: "#000000", uri: "https://liff.line.me/2008704329-cTkwlRHm" },
+            btn2: { label: "好友分享", color: "#000000", uri: "line://nv/recommendOA/@754tjssx" }
+          }
+        };
+      }
+      
+      // 設置當前頁面
+      currentTab.value = 'messages';
+      currentSubTab.value = 'ecommerce';
+      flexData.value.type = 'ecommerce';
+      
+    } else {
+      // 載入標準或影片型專案
+      try {
+        const projectData = typeof project.data === 'string' ? 
+          JSON.parse(project.data) : project.data;
+        
+        if (projectData) {
+          // 載入主要數據
+          if (projectData.type) {
+            flexData.value = projectData;
+          } else {
+            // 合併現有數據
+            Object.assign(flexData.value, projectData);
+          }
+          
+          // 載入聊天室訊息
+          chatMessage.value = projectData.chatMessage || 
+            "📢 歡迎查看我的分享！";
+        }
+      } catch (e) {
+        console.error('解析專案數據失敗:', e);
+        alert('載入專案數據失敗，使用預設模板');
+        // 使用預設模板
+        flexData.value = {
+          type: project.type || 'standard', 
+          imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
+          aspectRatio: '20:13', 
+          title: '', 
+          subtitle: '', 
+          showBadge: true, 
+          badgeColor: '#FF0000',
+          buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }]
+        };
+      }
+      
+      // 設置當前頁面
+      currentTab.value = 'messages';
+      currentSubTab.value = project.type === 'video' ? 'video' : 'single';
+      flexData.value.type = project.type || 'standard';
+    }
+    
+    alert(`已載入專案: ${project.name}`);
+    
+  } catch (error) {
+    console.error('載入專案時發生錯誤:', error);
+    alert('載入專案失敗: ' + (error.message || '未知錯誤'));
+  }
+};
+
+// 刪除專案 - 完整版本
+const deleteProject = (projectId) => {
+  if (!projectId) {
+    alert('無效的專案ID');
+    return;
+  }
+  
+  projectToDelete.value = projectId;
+  showDeleteConfirm.value = true;
+};
+
+const confirmDelete = async () => {
+  if (!projectToDelete.value) {
+    alert('無效的專案ID');
+    showDeleteConfirm.value = false;
+    return;
+  }
+
+  try {
+    const payload = { id: projectToDelete.value };
+    console.log('刪除專案:', payload);
+    
+    const response = await fetch(`${WORKER_URL}/api/projects/delete`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('刪除專案回應:', data);
+    
+    if (data.success) {
+      alert('專案刪除成功！');
+      
+      // 如果刪除的是當前編輯的專案，清除當前專案
+      if (currentProjectId.value === projectToDelete.value) {
+        clearCurrentProject();
+      }
+      
+      // 重新載入專案列表
+      await loadProjects();
+    } else {
+      const errorMsg = data.error || data.message || '未知錯誤';
+      alert(`刪除失敗: ${errorMsg}`);
+    }
+  } catch (error) {
+    console.error('刪除專案時發生錯誤:', error);
+    alert(`刪除失敗: ${error.message}`);
+  } finally {
+    showDeleteConfirm.value = false;
+    projectToDelete.value = null;
+  }
+};
+
+// 推播專案 - 完整版本
+const pushProject = async (project) => {
+  if (!liffProfile.value) {
+    alert("請先登入 LINE");
+    liffLogin();
+    return;
+  }
+
+  if (!project || !project.id) {
+    alert("無效的專案數據");
+    return;
+  }
+
+  try {
+    const payload = {
+      projectId: project.id,
+      userId: liffProfile.value.userId
+    };
+
+    console.log('推播專案:', payload);
+    
+    const response = await fetch(`${WORKER_URL}/api/plugins/push`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('推播專案回應:', data);
+    
+    if (data.success) {
+      alert('專案推播成功！');
+    } else {
+      const errorMsg = data.error || data.message || '未知錯誤';
+      alert(`推播失敗: ${errorMsg}`);
+    }
+  } catch (error) {
+    console.error('推播專案時發生錯誤:', error);
+    alert(`推播失敗: ${error.message}`);
+  }
+};
+
+// 儲存到 Cloudflare Worker - 完整版本
+const saveToCloudflare = async () => {
+  if (!liffProfile.value) {
+    alert("請先登入 LINE");
+    liffLogin();
+    return;
+  }
+
+  isSaving.value = true;
+  try {
+    const payload = {
+      userId: liffProfile.value.userId,
+      type: flexData.value.type,
+      name: flexData.value.type === 'ecommerce' ? 
+        '電商型專案' : 
+        (flexData.value.title || flexData.value.headerName || '未命名專案'),
+      params: flexData.value.type === 'ecommerce' ? {
+        chatMessage: chatMessage.value,
+        ...ecomState.value
+      } : {
+        chatMessage: chatMessage.value,
+        ...flexData.value
+      },
+      flexPayload: flexData.value.type === 'ecommerce' ? 
+        generateEcommerceJson() : 
+        generatedJson.value
+    };
+
+    console.log('儲存到 Cloudflare:', payload);
+    
+    const response = await fetch(`${WORKER_URL}/api/plugins/save`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Cloudflare 儲存回應:', data);
+    
+    if (data.success) {
+      alert('數據已成功儲存到 Google Sheets！');
+    } else {
+      const errorMsg = data.error || data.message || '未知錯誤';
+      alert(`儲存失敗: ${errorMsg}`);
+    }
+    
+  } catch (error) {
+    console.error('儲存失敗:', error);
+    alert(`儲存失敗: ${error.message}`);
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+// 直接推播功能
+const shareToLine = () => {
+  if (!liff.isLoggedIn()) { 
+    alert("請先登入 LINE。"); 
+    liffLogin(); 
+    return; 
+  }
+  
+  // 創建包含聊天室文字的完整訊息
+  const flexMessage = {
+    type: "flex",
+    altText: chatMessage.value || (flexData.value.type === 'ecommerce' ? "電商型插件訊息" : 
+             flexData.value.type === 'video' ? "影片名片訊息" : "文章型插件訊息"),
+    contents: flexData.value.type === 'ecommerce' ? generateEcommerceJson() : generatedJson.value
+  };
+  
+  liff.shareTargetPicker([flexMessage])
+  .then(res => { 
+    if (res) alert("發送成功！"); 
+  })
+  .catch(err => alert("發送失敗：" + err));
+};
+
+// 清除當前專案
+const clearCurrentProject = () => {
+  currentProjectId.value = null;
+  currentProjectName.value = '';
+  chatMessage.value = "🎉 限時優惠！精選商品特價中，點擊查看最新商品！";
+  
+  if (flexData.value.type === 'ecommerce') {
+    ecomState.value = {
+      hero: {
+        type: 'video', 
+        aspectRatio: '16:9',
+        url: "https://lihi.cc/5OXMZ", 
+        videoUrl: "https://lihi.cc/YsmAp", 
+        link: "https://line.me"
+      },
+      body: {
+        columns: 3,
+        bubbleSize: "mega", 
+        bgType: "image",
+        bgMode: "cover",
+        bgColor: "#F8F8F8",
+        bg: "https://lihi.cc/l5qqU",
+        tagBgColor: "#0D0D0D",
+        tagTextColor: "#FFFFFF",
+        items: [
+          { title: "商品 A", img: "https://lihi.cc/mwMvo", url: "https://line.me" },
+          { title: "商品 B", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+          { title: "商品 C", img: "https://lihi.cc/yRfpn", url: "https://line.me" }
+        ]
+      },
+      footer: {
+        bg: "#ffffff", 
+        textEnabled: false,
+        text: "※ 請注意：優惠商品數量有限，售完為止。",
+        textColor: "#666666",
+        textAlign: "center",
+        btn1: { label: "品牌故事", color: "#000000", uri: "https://liff.line.me/2008704329-cTkwlRHm" },
+        btn2: { label: "好友分享", color: "#000000", uri: "line://nv/recommendOA/@754tjssx" }
+      }
+    };
+  } else {
+    flexData.value = {
+      type: 'standard', 
+      imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
+      aspectRatio: '20:13', 
+      title: '', 
+      subtitle: '', 
+      showBadge: true, 
+      badgeColor: '#FF0000',
+      buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }]
+    };
+  }
+};
 
     const formatDate = (dateString) => {
       if (!dateString) return '無日期';
