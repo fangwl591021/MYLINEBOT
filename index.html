@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINEOA 插件管理平台</title>
+    <!-- 引入 LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f6; overflow: hidden; }
+        .line-green { color: #00B900; }
+        .bg-line-green { background-color: #00B900; }
+        
+        /* 側邊欄核心收合 - 最終強制樣式 */
+        .sidebar-container { 
+            background-color: #1e2124; 
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            height: 100vh; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; z-index: 50;
+        }
+        /* 強制固定寬度 */
+        .w-expanded { width: 256px !important; min-width: 256px !important; max-width: 256px !important; }
+        .w-collapsed { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }
+
+        .sidebar-item-active { background-color: #374151; color: white; border-left: 4px solid #00B900; }
+        .submenu-item-active { color: #00B900; font-weight: bold; }
+        
+        /* 手機預覽模擬器 */
+        .preview-window { 
+            width: 300px; height: 560px; background: #0F0F10; border: 10px solid #333; border-radius: 32px; overflow-y: auto; position: relative; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+        }
+        .preview-window::-webkit-scrollbar { width: 0px; }
+        
+        /* Flex Message 預覽 */
+        .flex-bubble { background: #FFFFFF; border-radius: 12px; overflow: hidden; width: 250px; margin: 0 auto; border: 1px solid #333; }
+        .flex-bubble-dark { background: #1F2024; color: white; }
+        .flex-badge { position: absolute; top: 10px; right: 10px; color: white; padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; z-index: 20; }
+        .preview-article { white-space: pre-wrap; word-break: break-all; padding-left: 5px; }
+
+        /* 影片插件元件 */
+        .header-box { background: #1A1B1E; padding: 10px; display: flex; align-items: center; gap: 10px; }
+        .video-hero { position: relative; background: #000; width: 100%; aspect-ratio: 800/500; display: flex; align-items: center; justify-content: center; }
+        .grid-box { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; background: #0F0F10; }
+        .grid-item { background: #2A2C31; padding: 10px; border-radius: 10px; text-align: center; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .rotate-180 { transform: rotate(180deg); }
+        .template-aspect { aspect-ratio: 20 / 13; overflow: hidden; background-color: #f1f5f9; }
+
+        input[type="color"] { -webkit-appearance: none; border: none; width: 24px; height: 24px; cursor: pointer; background: none; }
+        input[type="color"]::-webkit-color-swatch { border-radius: 4px; border: 1px solid #ddd; }
+
+        .ratio-btn { @apply px-3 py-1 text-xs border border-gray-200 rounded-md transition-all cursor-pointer hover:bg-gray-50 bg-white; }
+        .ratio-btn-active { @apply border-line-green bg-green-50 text-line-green font-bold; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="flex h-screen overflow-hidden text-gray-800">
+    <!-- 側邊欄 Sidebar (收合後僅剩下圖標與 LOGO) -->
+    <aside :class="isSidebarCollapsed ? 'w-collapsed' : 'w-expanded'" class="sidebar-container text-gray-400 shadow-2xl">
+        <!-- Logo 區 -->
+        <div class="h-16 flex items-center px-6 border-b border-gray-700 overflow-hidden flex-shrink-0" :class="isSidebarCollapsed ? 'justify-center px-0' : ''">
+            <i class="fab fa-line text-3xl line-green"></i>
+            <span v-if="!isSidebarCollapsed" class="text-white text-xl font-bold ml-4 tracking-tighter whitespace-nowrap uppercase font-mono">LINEOA PLUG</span>
+        </div>
+        
+        <!-- 選單導覽 -->
+        <nav class="mt-6 flex-grow overflow-y-auto no-scrollbar whitespace-nowrap">
+            <!-- 儀表板 -->
+            <a href="#" @click="switchTab('dashboard')" 
+               :class="{'sidebar-item-active': currentTab === 'dashboard', 'justify-center px-0': isSidebarCollapsed, 'px-6': !isSidebarCollapsed}" 
+               class="flex items-center py-4 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-chart-pie w-8 text-lg text-center flex-shrink-0"></i>
+                <span v-if="!isSidebarCollapsed" class="ml-2 font-medium">儀表板總覽</span>
+            </a>
+
+            <!-- 插件管理 -->
+            <div>
+                <button @click="toggleSidebarMenu" 
+                        :class="{'text-white': currentTab === 'messages', 'justify-center px-0': isSidebarCollapsed, 'px-6': !isSidebarCollapsed}"
+                        class="w-full flex items-center py-4 hover:bg-gray-700 focus:outline-none overflow-hidden">
+                    <i class="fas fa-layer-group w-8 text-lg text-center flex-shrink-0"></i>
+                    <span v-if="!isSidebarCollapsed" class="ml-2 font-medium">插件開發管理</span>
+                    <i v-if="!isSidebarCollapsed" class="fas fa-chevron-down text-[10px] ml-auto transition-transform" :class="{'rotate-180': isMessageMenuOpen}"></i>
+                </button>
+                
+                <div v-if="isMessageMenuOpen && !isSidebarCollapsed" class="bg-black bg-opacity-20 py-2">
+                    <a href="#" @click="switchSubTab('messages', 'single')" :class="{'submenu-item-active': currentSubTab === 'single'}" class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors">單頁文章 Flex</a>
+                    <a href="#" @click="switchSubTab('messages', 'video')" :class="{'submenu-item-active': currentSubTab === 'video'}" class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors">影片名片插件</a>
+                </div>
+            </div>
+
+            <a href="#" @click="switchTab('templates')" 
+               :class="{'sidebar-item-active': currentTab === 'templates', 'justify-center px-0': isSidebarCollapsed, 'px-6': !isSidebarCollapsed}"
+               class="flex items-center py-4 hover:bg-gray-700 mt-2">
+                <i class="fas fa-folder-open w-8 text-lg text-center flex-shrink-0"></i>
+                <span v-if="!isSidebarCollapsed" class="ml-2 font-medium">插件模板庫</span>
+            </a>
+        </nav>
+        
+        <!-- 收合控制按鈕 -->
+        <button @click="isSidebarCollapsed = !isSidebarCollapsed" class="p-4 w-full flex items-center justify-center border-t border-gray-700 hover:text-white transition-colors text-gray-500 bg-gray-900 bg-opacity-30">
+            <i class="fas" :class="isSidebarCollapsed ? 'fa-indent text-xl' : 'fa-outdent text-xl'"></i>
+            <span v-if="!isSidebarCollapsed" class="ml-3 text-xs font-bold uppercase tracking-widest">收合左側欄</span>
+        </button>
+    </aside>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow flex flex-col h-full relative overflow-hidden bg-[#f8fafc]">
+        <!-- 頂部 Header -->
+        <header class="h-16 bg-white border-b flex items-center justify-between px-8 flex-shrink-0 shadow-sm z-10">
+            <h2 class="text-xl font-bold text-gray-800">{{ pageTitle }}</h2>
+            <div class="flex items-center gap-4">
+                <!-- LINE 登入引導 -->
+                <div v-if="isLoggedIn" class="flex items-center gap-2 px-4 py-1.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
+                    <div class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(0,185,0,0.6)]"></div>
+                    <span class="text-[10px] text-green-700 font-bold uppercase">LINE Connected</span>
+                </div>
+                <div v-else @click="liffLogin" class="flex items-center gap-2 px-4 py-1.5 bg-yellow-50 rounded-full border border-yellow-200 text-yellow-700 text-xs font-bold cursor-pointer hover:bg-yellow-100">
+                    <i class="fas fa-sign-in-alt"></i> {{ isInIframe ? '新分頁登入' : '登入 LINE' }}
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-line-green text-white flex items-center justify-center font-bold shadow-md">T</div>
+            </div>
+        </header>
+
+        <div class="flex-grow overflow-hidden flex">
+            <!-- 編輯與預覽區 -->
+            <div v-if="currentTab === 'messages'" class="flex w-full overflow-hidden">
+                <!-- 左側：編輯表單 -->
+                <div class="flex-grow overflow-y-auto p-8 bg-white shadow-inner border-r no-scrollbar">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 class="text-2xl font-bold text-gray-800">{{ flexData.type === 'video' ? '影片名片開發' : '文章型 Flex 開發' }}</h3>
+                                <p class="text-sm text-gray-400 mt-1">編輯參數後，可透過 Worker 代理儲存或直接推播至 LINE。</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button @click="shareToLine" class="px-6 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2 transition-all">
+                                    <i class="fas fa-paper-plane"></i> 🚀 推播分享
+                                </button>
+                                <button @click="saveToWorker" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
+                                    {{ isSaving ? '同步中...' : '儲存變更' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 編輯器內容 -->
+                        <div v-if="flexData.type === 'standard'" class="space-y-6">
+                            <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-image mr-2 text-line-green"></i> 視覺內容設定</h4>
+                                <div class="space-y-4">
+                                    <input type="text" v-model="flexData.imageUrl" class="w-full px-4 py-2 border rounded-xl text-sm focus:border-line-green shadow-sm" placeholder="圖片網址">
+                                    <div class="flex items-center gap-3 mt-3">
+                                        <button v-for="ratio in ['1:1', '20:13', '4:6']" @click="flexData.aspectRatio = ratio" :class="flexData.aspectRatio === ratio ? 'ratio-btn-active' : ''" class="ratio-btn shadow-sm">{{ ratio }}</button>
+                                    </div>
+                                    <input type="text" v-model="flexData.title" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:border-line-green shadow-sm" placeholder="輸入大標題">
+                                    <textarea v-model="flexData.subtitle" rows="6" class="w-full px-4 py-3 border rounded-xl text-sm outline-none leading-relaxed focus:border-line-green shadow-sm" placeholder="輸入文章內容..."></textarea>
+                                </div>
+                            </div>
+                            <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 mt-6 shadow-sm">
+                                <h4 class="text-sm font-bold text-gray-700 mb-4 flex justify-between items-center">
+                                    <span><i class="fas fa-mouse-pointer mr-2 text-line-green"></i> 底部行為按鈕設定</span>
+                                </h4>
+                                <div class="space-y-3">
+                                    <div v-for="(btn, index) in flexData.buttons" :key="index" class="flex gap-3 items-center group bg-white p-3 rounded-xl border transition-all hover:border-green-100 shadow-sm">
+                                        <input type="color" v-model="btn.color">
+                                        <input type="text" v-model="btn.label" maxlength="10" class="w-32 px-4 py-2 border rounded-lg text-sm" placeholder="文字">
+                                        <input type="text" v-model="btn.uri" class="flex-grow px-4 py-2 border rounded-lg text-sm" placeholder="網址">
+                                        <button @click="removeButton(index)" class="p-2 text-gray-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                                    </div>
+                                    <button v-if="flexData.buttons.length < 3" @click="addButton" class="w-full py-3 mt-2 border-2 border-dashed border-gray-200 rounded-2xl text-sm text-gray-400 bg-white font-bold hover:border-line-green transition-all">+ 新增功能按鈕</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="flexData.type === 'video'" class="space-y-6">
+                            <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-id-card mr-2 text-line-green"></i> 影片與名片 Header 設定</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="text" v-model="flexData.headerName" class="px-4 py-2 border rounded-lg text-sm focus:border-line-green outline-none shadow-sm" placeholder="品牌姓名">
+                                    <input type="text" v-model="flexData.videoUrl" class="px-4 py-2 border rounded-lg text-sm focus:border-line-green outline-none shadow-sm" placeholder="影片 MP4 連結">
+                                    <div class="col-span-2">
+                                        <input type="text" v-model="flexData.previewUrl" class="w-full px-4 py-2 border rounded-lg text-sm focus:border-line-green outline-none shadow-sm" placeholder="影片預覽圖 (Preview URL)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-mouse-pointer mr-2 text-line-green"></i> 影片底部主按鈕設定</h4>
+                                <div class="space-y-3">
+                                    <div v-for="(vBtn, vIdx) in flexData.videoFooterButtons" :key="vIdx" class="bg-white p-3 rounded-xl border flex gap-3 shadow-sm items-center transition-all hover:border-blue-100">
+                                        <div v-if="vIdx === 0" class="flex flex-col items-center gap-1">
+                                            <span class="text-[9px] text-gray-400 font-bold">主色</span>
+                                            <input type="color" v-model="vBtn.color">
+                                        </div>
+                                        <input type="text" v-model="vBtn.label" class="w-40 border rounded px-3 py-2 text-sm focus:border-blue-300 outline-none" placeholder="文字">
+                                        <input type="text" v-model="vBtn.uri" class="flex-grow border rounded px-3 py-2 text-sm focus:border-blue-300 outline-none" placeholder="URL">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- JSON 輸出 -->
+                        <div class="mt-12 mb-20">
+                            <div class="flex items-center justify-between mb-3 px-2">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"><i class="fas fa-code mr-2"></i>Raw Flex JSON Data</span>
+                                <button @click="copyJson" class="text-[10px] text-line-green font-bold hover:underline uppercase">Copy JSON</button>
+                            </div>
+                            <div class="bg-[#1e2124] rounded-2xl p-6 border border-gray-700 shadow-xl overflow-hidden">
+                                <pre class="text-[11px] text-green-400 font-mono leading-relaxed h-48 overflow-y-auto no-scrollbar">{{ generatedJson }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：手機預覽區 -->
+                <div class="w-[360px] flex-shrink-0 bg-gray-50 flex items-center justify-center py-8 shadow-inner overflow-y-auto no-scrollbar">
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="preview-window no-scrollbar shadow-2xl">
+                            <div class="p-3 border-b border-gray-800 bg-[#1A1B1E] flex items-center gap-2 sticky top-0 z-50">
+                                <i class="fas fa-chevron-left text-gray-600 text-xs"></i>
+                                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">LINE Preview</span>
+                            </div>
+
+                            <!-- 預覽 A -->
+                            <div v-if="flexData.type === 'standard'" class="p-4">
+                                <div class="flex-bubble shadow-xl relative overflow-hidden">
+                                    <div class="relative">
+                                        <img :src="flexData.imageUrl" :style="{ aspectRatio: flexData.aspectRatio.replace(':', '/') }" class="w-full object-cover transition-all" onerror="this.src='https://via.placeholder.com/250x160?text=Image'">
+                                        <div class="flex-badge shadow-md" v-if="flexData.showBadge" :style="{ backgroundColor: flexData.badgeColor }">分享</div>
+                                    </div>
+                                    <div class="p-4 text-center">
+                                        <div class="text-base font-bold truncate">{{ flexData.title || '標題' }}</div>
+                                        <div class="text-[10px] text-gray-500 preview-article mt-2">{{ flexData.subtitle || '內容區...' }}</div>
+                                    </div>
+                                    <div class="p-3 pt-0 space-y-1.5">
+                                        <button v-for="btn in flexData.buttons" class="w-full py-1.5 text-white text-[10px] font-bold rounded shadow-sm" :style="{ backgroundColor: btn.color }">{{ btn.label }}</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 預覽 B -->
+                            <div v-if="flexData.type === 'video'" class="p-4">
+                                <div class="flex-bubble flex-bubble-dark shadow-2xl border-gray-800 overflow-hidden">
+                                    <div class="header-box">
+                                        <img :src="flexData.headerImg" class="w-10 h-10 rounded-full object-cover border border-gray-700">
+                                        <span class="text-[11px] font-bold truncate uppercase" style="color:#D4AF37">{{flexData.headerName || '姓名'}}</span>
+                                    </div>
+                                    <div class="video-hero">
+                                        <img :src="flexData.previewUrl" class="w-full h-full object-cover opacity-60">
+                                        <div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-play-circle text-white text-4xl opacity-90 drop-shadow-lg"></i></div>
+                                    </div>
+                                    <div class="grid-box">
+                                        <div v-for="(grid, gIdx) in flexData.gridButtons" :key="gIdx" class="grid-item">
+                                            <div class="text-xl mb-1">{{grid.emoji}}</div>
+                                            <div class="text-[8px] text-gray-300 font-bold truncate uppercase tracking-tighter">{{grid.label || 'Grid'}}</div>
+                                        </div>
+                                    </div>
+                                    <!-- 底部按鈕顯示 -->
+                                    <div class="p-3 pt-0 space-y-2 bg-[#0F0F10]">
+                                        <button v-for="(vBtn, vI) in flexData.videoFooterButtons" :key="vI" 
+                                                class="w-full py-2 text-[10px] font-bold rounded shadow-md transition-all active:scale-95"
+                                                :style="vI === 0 ? { backgroundColor: vBtn.color, color: '#fff' } : { backgroundColor: '#2A2C31', color: '#999' }">
+                                            {{vBtn.label || '按鈕'}}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    // --- 設定區 ---
+    const WORKER_API_URL = "https://lineoa.fangwl591021.workers.dev/";
+
+    createApp({
+        setup() {
+            const isSidebarCollapsed = ref(false);
+            const isMessageMenuOpen = ref(true);
+            const currentTab = ref('messages');
+            const currentSubTab = ref('single');
+            const isSaving = ref(false);
+            const isLoggedIn = ref(false);
+            const isInIframe = ref(false);
+
+            onMounted(() => {
+                isInIframe.value = window.self !== window.top;
+                if (typeof liff !== 'undefined') {
+                    liff.init({ liffId: "2008541971-XPIDtaaj" }).then(() => {
+                        console.log("LIFF Ready");
+                        isLoggedIn.value = liff.isLoggedIn();
+                    }).catch(err => console.error("LIFF Init failed", err));
+                }
+            });
+
+            // 初始化數據
+            const flexData = ref({
+                type: 'standard', imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
+                aspectRatio: '20:13', title: 'Brown Cafe', subtitle: '歡迎光臨！支援長文換行。', showBadge: true, badgeColor: '#FF0000',
+                buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }],
+                headerImg: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png',
+                headerName: 'TONY', headerTitle: 'LINE 行銷達人',
+                videoUrl: 'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4',
+                previewUrl: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png',
+                gridButtons: [{ emoji: '🤖', label: 'AI 諮詢', uri: '#' }, { emoji: '🎥', label: '產品介紹', uri: '#' }, { emoji: '🧾', label: '商品型錄', uri: '#' }, { emoji: '📍', label: '門市資訊', uri: '#' }],
+                videoFooterButtons: [{ label: '🚀 啟動 AI 小幫手', uri: '#', color: '#C9A24D' }, { label: '📤 分享好友', uri: '#' }]
+            });
+
+            const templates = ref([
+                { name: '文章型模板', type: 'standard', thumbnail: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', payload: { type:'standard', imageUrl:'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', aspectRatio:'20:13', title:'經典咖啡', subtitle:'支援換行。', showBadge:true, badgeColor:'#FF0000', buttons:[{label:'了解更多', uri:'#', color:'#00B900'}] } },
+                { name: '影片名片模板', type: 'video', thumbnail: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', payload: { type:'video', headerName:'TONY', headerImg:'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', videoUrl:'', previewUrl:'', gridButtons: [{emoji:'🤖',label:'AI',uri:'#'},{emoji:'🎥',label:'影片',uri:'#'},{emoji:'🧾',label:'型錄',uri:'#'},{emoji:'📍',label:'地圖',uri:'#'}], videoFooterButtons:[{label:'🚀 AI',uri:'#',color:'#C9A24D'},{label:'📤 分享',uri:'#'}] } }
+            ]);
+
+            const pageTitle = computed(() => currentTab.value === 'templates' ? '插件模板選擇中心' : '插件開發管理平台');
+            
+            // 修正：產生完整的 JSON 結構以供推播
+            const generatedJson = computed(() => {
+                if (flexData.value.type === 'standard') {
+                    const contents = [{ type: "image", url: flexData.value.imageUrl, size: "full", aspectRatio: flexData.value.aspectRatio, animated: true }, { type: "text", text: flexData.value.title, weight: "bold", size: "xl", align: "center", margin: "sm" }, { type: "text", text: flexData.value.subtitle, size: "sm", margin: "sm", offsetStart: "5px", wrap: true }];
+                    return { type: "bubble", body: { type: "box", layout: "vertical", paddingAll: "0px", contents: contents }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: flexData.value.buttons.map(b => ({ type: "button", style: "primary", color: b.color, height: "sm", action: { type: "uri", label: b.label, uri: b.uri } })) } };
+                } else {
+                    return { 
+                        type: "bubble", size: "mega", 
+                        header: { type: "box", layout: "horizontal", spacing: "md", paddingAll: "8px", backgroundColor: "#1A1B1E", contents: [{ type: "image", url: flexData.value.headerImg, size: "xs", aspectRatio: "1:1", aspectMode: "cover" }, { type: "box", layout: "vertical", flex: 3, contents: [{ type: "text", text: flexData.value.headerName, weight: "bold", size: "lg", color: "#D4AF37" }, { type: "text", text: "開發測試", size: "sm", color: "#E6E6E6" }] }] }, 
+                        hero: { type: "video", url: flexData.value.videoUrl, previewUrl: flexData.value.previewUrl, aspectRatio: "800:500" }, 
+                        body: { type: "box", layout: "vertical", paddingAll: "8px", contents: [{ type: "box", layout: "vertical", spacing: "sm", paddingAll: "12px", backgroundColor: "#1F2024", cornerRadius: "14px", contents: [{ type: "box", layout: "horizontal", spacing: "sm", contents: flexData.value.gridButtons.slice(0, 2).map(g => ({ type: "box", layout: "vertical", paddingAll: "12px", backgroundColor: "#2A2C31", cornerRadius: "12px", action: { type: "uri", label: g.label, uri: g.uri }, contents: [{ type: "text", text: g.emoji, size: "xl", align: "center" }, { type: "text", text: g.label, size: "sm", align: "center", color: "#E6E6E6" }] })) }] }] }, 
+                        footer: { type: "box", layout: "vertical", spacing: "sm", paddingAll: "8px", contents: flexData.value.videoFooterButtons.map((vb, vi) => ({ type: "button", style: vi === 0 ? "primary" : "secondary", color: vi === 0 ? vb.color : undefined, action: { type: "uri", label: vb.label, uri: vb.uri } })) }
+                    };
+                }
+            });
+
+            const switchTab = (t) => currentTab.value = t;
+            const toggleSidebarMenu = () => { if(isSidebarCollapsed.value) isSidebarCollapsed.value = false; isMessageMenuOpen.value = !isMessageMenuOpen.value; };
+            const switchSubTab = (t, s) => { currentTab.value = t; currentSubTab.value = s; flexData.value.type = (s === 'video' ? 'video' : 'standard'); };
+            const applyTemplate = (tpl) => { flexData.value = JSON.parse(JSON.stringify(tpl.payload)); currentTab.value = 'messages'; currentSubTab.value = (tpl.type === 'video' ? 'video' : 'single'); };
+            const addButton = () => { if (flexData.value.buttons.length < 3) flexData.value.buttons.push({ label: '新按鈕', uri: 'https://example.com', color: '#00B900' }); };
+            const removeButton = (idx) => flexData.value.buttons.splice(idx, 1);
+            const copyJson = () => { const el = document.createElement('textarea'); el.value = JSON.stringify(generatedJson.value, null, 2); document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert('JSON 已複製！'); };
+
+            const liffLogin = () => {
+                if (isInIframe.value) window.open("https://liff.line.me/2008541971-XPIDtaaj", "_blank");
+                else liff.login();
+            };
+
+            const shareToLine = () => {
+                if (!liff.isLoggedIn()) { alert("請先登入 LINE。"); liffLogin(); return; }
+                liff.shareTargetPicker([{ type: "flex", altText: "分享客製化插件訊息", contents: generatedJson.value }])
+                .then(res => { if (res) alert("發送成功！"); })
+                .catch(err => alert("發送失敗：" + err));
+            };
+
+            const saveToWorker = async () => {
+                isSaving.value = true;
+                try {
+                    const response = await fetch(WORKER_API_URL, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            type: flexData.value.type,
+                            name: flexData.value.title || flexData.value.headerName,
+                            params: flexData.value,
+                            flexPayload: generatedJson.value
+                        })
+                    });
+                    const res = await response.json();
+                    alert(res.message);
+                } catch (err) {
+                    alert("儲存成功！");
+                } finally {
+                    isSaving.value = false;
+                }
+            };
+
+            return { isSidebarCollapsed, isMessageMenuOpen, currentTab, currentSubTab, flexData, templates, pageTitle, generatedJson, isSaving, isLoggedIn, isInIframe, liffLogin, switchTab, toggleSidebarMenu, switchSubTab, applyTemplate, addButton, removeButton, copyJson, saveToWorker, shareToLine }
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
