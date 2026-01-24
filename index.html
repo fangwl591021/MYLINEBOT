@@ -182,9 +182,22 @@
                                 <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-id-card mr-2 text-line-green"></i> 影片與名片 Header 設定</h4>
                                 <div class="grid grid-cols-2 gap-4">
                                     <input type="text" v-model="flexData.headerName" class="px-4 py-2 border rounded-lg text-sm focus:border-line-green outline-none shadow-sm" placeholder="品牌姓名">
-                                    <input type="text" v-model="flexData.videoUrl" class="px-4 py-2 border rounded-lg text-sm focus:border-line-green outline-none shadow-sm" placeholder="影片 MP4 連結">
+                                    <input type="text" v-model="flexData.headerTitle" class="px-4 py-2 border rounded-lg text-sm focus:border-line-green outline-none shadow-sm" placeholder="職位/稱號">
+                                    <input type="text" v-model="flexData.videoUrl" class="col-span-2 px-4 py-2 border rounded-lg text-sm focus:border-line-green outline-none shadow-sm" placeholder="影片 MP4 連結">
                                     <div class="col-span-2">
                                         <input type="text" v-model="flexData.previewUrl" class="w-full px-4 py-2 border rounded-lg text-sm focus:border-line-green outline-none shadow-sm" placeholder="影片預覽圖 (Preview URL)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-th mr-2 text-line-green"></i> 網格按鈕設定</h4>
+                                <div class="space-y-3">
+                                    <div v-for="(grid, index) in flexData.gridButtons" :key="index" class="grid grid-cols-2 gap-3">
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" v-model="grid.emoji" class="w-16 px-3 py-2 border rounded-lg text-sm" placeholder="emoji">
+                                            <input type="text" v-model="grid.label" class="flex-1 px-3 py-2 border rounded-lg text-sm" placeholder="標籤文字">
+                                        </div>
+                                        <input type="text" v-model="grid.uri" class="px-3 py-2 border rounded-lg text-sm" placeholder="URL">
                                     </div>
                                 </div>
                             </div>
@@ -273,6 +286,35 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- 插件模板庫 -->
+            <div v-if="currentTab === 'templates'" class="w-full overflow-y-auto p-8">
+                <div class="max-w-7xl mx-auto">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">插件模板庫</h3>
+                    <p class="text-gray-500 mb-8">選擇模板快速開始你的插件設計</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="(template, idx) in templates" :key="idx" 
+                             @click="applyTemplate(template)"
+                             class="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
+                            <div class="template-aspect overflow-hidden bg-gray-100">
+                                <img :src="template.thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                            </div>
+                            <div class="p-5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-bold text-gray-800">{{ template.name }}</h4>
+                                    <span class="px-2 py-1 text-xs rounded-full" :class="template.type === 'video' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'">
+                                        {{ template.type === 'video' ? '影片型' : '文章型' }}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-500 mb-4">點擊立即套用模板</p>
+                                <button class="w-full py-2.5 bg-line-green text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all">
+                                    立即套用
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 </div>
@@ -303,22 +345,76 @@
                 }
             });
 
-            // 初始化數據
+            // 初始化數據 - 更新為完整的影片模板結構
             const flexData = ref({
-                type: 'standard', imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
-                aspectRatio: '20:13', title: 'Brown Cafe', subtitle: '歡迎光臨！支援長文換行。', showBadge: true, badgeColor: '#FF0000',
+                type: 'standard', 
+                imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
+                aspectRatio: '20:13', 
+                title: 'Brown Cafe', 
+                subtitle: '歡迎光臨！支援長文換行。', 
+                showBadge: true, 
+                badgeColor: '#FF0000',
                 buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }],
+                
+                // 影片模板數據
                 headerImg: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png',
-                headerName: 'TONY', headerTitle: 'LINE 行銷達人',
+                headerName: 'TONY', 
+                headerTitle: 'LINE行銷達人',
+                headerDescription: '系統開發',
                 videoUrl: 'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4',
-                previewUrl: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png',
-                gridButtons: [{ emoji: '🤖', label: 'AI 諮詢', uri: '#' }, { emoji: '🎥', label: '產品介紹', uri: '#' }, { emoji: '🧾', label: '商品型錄', uri: '#' }, { emoji: '📍', label: '門市資訊', uri: '#' }],
-                videoFooterButtons: [{ label: '🚀 啟動 AI 小幫手', uri: '#', color: '#C9A24D' }, { label: '📤 分享好友', uri: '#' }]
+                previewUrl: 'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200',
+                gridButtons: [
+                    { emoji: '🤖', label: 'AI 諮詢', uri: 'https://liff.line.me/2006625044-bPGxrB53/' },
+                    { emoji: '🎥', label: '產品介紹', uri: 'https://example.com/video' },
+                    { emoji: '🧾', label: '商品型錄', uri: 'https://example.com/catalog' },
+                    { emoji: '📍', label: '門市資訊', uri: 'https://example.com/map' }
+                ],
+                videoFooterButtons: [
+                    { label: '🚀 啟動 AI 小幫手', uri: 'https://liff.line.me/2006625044-bPGxrB53/index.php/colt_sp/6502/', color: '#C9A24D' },
+                    { label: '📤 分享好友', uri: 'https://liff.line.me/2006625044-J42EzjkZ/index.php/linecard_12/6816/' }
+                ]
             });
 
             const templates = ref([
-                { name: '文章型模板', type: 'standard', thumbnail: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', payload: { type:'standard', imageUrl:'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', aspectRatio:'20:13', title:'經典咖啡', subtitle:'支援換行。', showBadge:true, badgeColor:'#FF0000', buttons:[{label:'了解更多', uri:'#', color:'#00B900'}] } },
-                { name: '影片名片模板', type: 'video', thumbnail: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', payload: { type:'video', headerName:'TONY', headerImg:'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', videoUrl:'', previewUrl:'', gridButtons: [{emoji:'🤖',label:'AI',uri:'#'},{emoji:'🎥',label:'影片',uri:'#'},{emoji:'🧾',label:'型錄',uri:'#'},{emoji:'📍',label:'地圖',uri:'#'}], videoFooterButtons:[{label:'🚀 AI',uri:'#',color:'#C9A24D'},{label:'📤 分享',uri:'#'}] } }
+                { 
+                    name: '文章型模板', 
+                    type: 'standard', 
+                    thumbnail: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', 
+                    payload: { 
+                        type:'standard', 
+                        imageUrl:'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', 
+                        aspectRatio:'20:13', 
+                        title:'經典咖啡', 
+                        subtitle:'支援換行。', 
+                        showBadge:true, 
+                        badgeColor:'#FF0000', 
+                        buttons:[{label:'了解更多', uri:'#', color:'#00B900'}]
+                    } 
+                },
+                { 
+                    name: '影片名片模板', 
+                    type: 'video', 
+                    thumbnail: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', 
+                    payload: { 
+                        type:'video', 
+                        headerName:'TONY', 
+                        headerTitle: 'LINE行銷達人',
+                        headerDescription: '系統開發',
+                        headerImg:'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', 
+                        videoUrl:'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4',
+                        previewUrl:'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200',
+                        gridButtons: [
+                            {emoji:'🤖',label:'AI 諮詢',uri:'https://liff.line.me/2006625044-bPGxrB53/'},
+                            {emoji:'🎥',label:'產品介紹',uri:'https://example.com/video'},
+                            {emoji:'🧾',label:'商品型錄',uri:'https://example.com/catalog'},
+                            {emoji:'📍',label:'門市資訊',uri:'https://example.com/map'}
+                        ], 
+                        videoFooterButtons:[
+                            {label:'🚀 啟動 AI 小幫手',uri:'https://liff.line.me/2006625044-bPGxrB53/index.php/colt_sp/6502/',color:'#C9A24D'},
+                            {label:'📤 分享好友',uri:'https://liff.line.me/2006625044-J42EzjkZ/index.php/linecard_12/6816/'}
+                        ]
+                    } 
+                }
             ]);
 
             const pageTitle = computed(() => currentTab.value === 'templates' ? '插件模板選擇中心' : '插件開發管理平台');
@@ -326,15 +422,296 @@
             // 修正：產生完整的 JSON 結構以供推播
             const generatedJson = computed(() => {
                 if (flexData.value.type === 'standard') {
-                    const contents = [{ type: "image", url: flexData.value.imageUrl, size: "full", aspectRatio: flexData.value.aspectRatio, animated: true }, { type: "text", text: flexData.value.title, weight: "bold", size: "xl", align: "center", margin: "sm" }, { type: "text", text: flexData.value.subtitle, size: "sm", margin: "sm", offsetStart: "5px", wrap: true }];
-                    return { type: "bubble", body: { type: "box", layout: "vertical", paddingAll: "0px", contents: contents }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: flexData.value.buttons.map(b => ({ type: "button", style: "primary", color: b.color, height: "sm", action: { type: "uri", label: b.label, uri: b.uri } })) } };
-                } else {
+                    const contents = [
+                        { 
+                            type: "image", 
+                            url: flexData.value.imageUrl, 
+                            size: "full", 
+                            aspectRatio: flexData.value.aspectRatio, 
+                            animated: true 
+                        }, 
+                        { 
+                            type: "text", 
+                            text: flexData.value.title, 
+                            weight: "bold", 
+                            size: "xl", 
+                            align: "center", 
+                            margin: "sm" 
+                        }, 
+                        { 
+                            type: "text", 
+                            text: flexData.value.subtitle, 
+                            size: "sm", 
+                            margin: "sm", 
+                            offsetStart: "5px", 
+                            wrap: true 
+                        }
+                    ];
+                    
                     return { 
-                        type: "bubble", size: "mega", 
-                        header: { type: "box", layout: "horizontal", spacing: "md", paddingAll: "8px", backgroundColor: "#1A1B1E", contents: [{ type: "image", url: flexData.value.headerImg, size: "xs", aspectRatio: "1:1", aspectMode: "cover" }, { type: "box", layout: "vertical", flex: 3, contents: [{ type: "text", text: flexData.value.headerName, weight: "bold", size: "lg", color: "#D4AF37" }, { type: "text", text: "開發測試", size: "sm", color: "#E6E6E6" }] }] }, 
-                        hero: { type: "video", url: flexData.value.videoUrl, previewUrl: flexData.value.previewUrl, aspectRatio: "800:500" }, 
-                        body: { type: "box", layout: "vertical", paddingAll: "8px", contents: [{ type: "box", layout: "vertical", spacing: "sm", paddingAll: "12px", backgroundColor: "#1F2024", cornerRadius: "14px", contents: [{ type: "box", layout: "horizontal", spacing: "sm", contents: flexData.value.gridButtons.slice(0, 2).map(g => ({ type: "box", layout: "vertical", paddingAll: "12px", backgroundColor: "#2A2C31", cornerRadius: "12px", action: { type: "uri", label: g.label, uri: g.uri }, contents: [{ type: "text", text: g.emoji, size: "xl", align: "center" }, { type: "text", text: g.label, size: "sm", align: "center", color: "#E6E6E6" }] })) }] }] }, 
-                        footer: { type: "box", layout: "vertical", spacing: "sm", paddingAll: "8px", contents: flexData.value.videoFooterButtons.map((vb, vi) => ({ type: "button", style: vi === 0 ? "primary" : "secondary", color: vi === 0 ? vb.color : undefined, action: { type: "uri", label: vb.label, uri: vb.uri } })) }
+                        type: "bubble", 
+                        body: { 
+                            type: "box", 
+                            layout: "vertical", 
+                            paddingAll: "0px", 
+                            contents: contents 
+                        }, 
+                        footer: { 
+                            type: "box", 
+                            layout: "vertical", 
+                            spacing: "sm", 
+                            contents: flexData.value.buttons.map(b => ({ 
+                                type: "button", 
+                                style: "primary", 
+                                color: b.color, 
+                                height: "sm", 
+                                action: { 
+                                    type: "uri", 
+                                    label: b.label, 
+                                    uri: b.uri 
+                                } 
+                            })) 
+                        } 
+                    };
+                } else {
+                    // 完整的影片模板 JSON 結構
+                    return { 
+                        type: "bubble",
+                        size: "mega",
+                        header: {
+                            type: "box",
+                            layout: "horizontal",
+                            spacing: "md",
+                            paddingAll: "8px",
+                            backgroundColor: "#1A1B1E",
+                            contents: [
+                                {
+                                    type: "image",
+                                    url: flexData.value.headerImg,
+                                    size: "xs",
+                                    aspectRatio: "1:1",
+                                    aspectMode: "cover",
+                                    gravity: "center"
+                                },
+                                {
+                                    type: "box",
+                                    layout: "vertical",
+                                    spacing: "xs",
+                                    flex: 3,
+                                    contents: [
+                                        {
+                                            type: "text",
+                                            text: flexData.value.headerName || "TONY",
+                                            weight: "bold",
+                                            size: "lg",
+                                            color: "#D4AF37"
+                                        },
+                                        {
+                                            type: "text",
+                                            text: flexData.value.headerTitle || "LINE行銷達人",
+                                            size: "sm",
+                                            color: "#E6E6E6"
+                                        },
+                                        {
+                                            type: "text",
+                                            text: flexData.value.headerDescription || "系統開發",
+                                            size: "xs",
+                                            color: "#A0A0A0",
+                                            wrap: true
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        hero: {
+                            type: "video",
+                            url: flexData.value.videoUrl,
+                            previewUrl: flexData.value.previewUrl,
+                            aspectRatio: "800:500",
+                            altContent: {
+                                type: "image",
+                                url: flexData.value.previewUrl,
+                                size: "full",
+                                aspectRatio: "800:500",
+                                aspectMode: "cover"
+                            }
+                        },
+                        body: {
+                            type: "box",
+                            layout: "vertical",
+                            paddingAll: "8px",
+                            contents: [
+                                {
+                                    type: "box",
+                                    layout: "vertical",
+                                    spacing: "sm",
+                                    paddingAll: "12px",
+                                    backgroundColor: "#1F2024",
+                                    cornerRadius: "14px",
+                                    contents: [
+                                        {
+                                            type: "box",
+                                            layout: "horizontal",
+                                            spacing: "sm",
+                                            contents: [
+                                                {
+                                                    type: "box",
+                                                    layout: "vertical",
+                                                    paddingAll: "12px",
+                                                    backgroundColor: "#2A2C31",
+                                                    cornerRadius: "12px",
+                                                    action: {
+                                                        type: "uri",
+                                                        label: flexData.value.gridButtons[0]?.label || "AI 諮詢",
+                                                        uri: flexData.value.gridButtons[0]?.uri || "#"
+                                                    },
+                                                    contents: [
+                                                        {
+                                                            type: "text",
+                                                            text: flexData.value.gridButtons[0]?.emoji || "🤖",
+                                                            size: "xl",
+                                                            align: "center"
+                                                        },
+                                                        {
+                                                            type: "text",
+                                                            text: flexData.value.gridButtons[0]?.label || "AI 諮詢",
+                                                            size: "sm",
+                                                            align: "center",
+                                                            color: "#E6E6E6"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    type: "box",
+                                                    layout: "vertical",
+                                                    paddingAll: "12px",
+                                                    backgroundColor: "#2A2C31",
+                                                    cornerRadius: "12px",
+                                                    action: {
+                                                        type: "uri",
+                                                        label: flexData.value.gridButtons[1]?.label || "產品介紹",
+                                                        uri: flexData.value.gridButtons[1]?.uri || "#"
+                                                    },
+                                                    contents: [
+                                                        {
+                                                            type: "text",
+                                                            text: flexData.value.gridButtons[1]?.emoji || "🎥",
+                                                            size: "xl",
+                                                            align: "center"
+                                                        },
+                                                        {
+                                                            type: "text",
+                                                            text: flexData.value.gridButtons[1]?.label || "產品介紹",
+                                                            size: "sm",
+                                                            align: "center",
+                                                            color: "#E6E6E6"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            type: "box",
+                                            layout: "horizontal",
+                                            spacing: "sm",
+                                            contents: [
+                                                {
+                                                    type: "box",
+                                                    layout: "vertical",
+                                                    paddingAll: "12px",
+                                                    backgroundColor: "#2A2C31",
+                                                    cornerRadius: "12px",
+                                                    action: {
+                                                        type: "uri",
+                                                        label: flexData.value.gridButtons[2]?.label || "商品型錄",
+                                                        uri: flexData.value.gridButtons[2]?.uri || "#"
+                                                    },
+                                                    contents: [
+                                                        {
+                                                            type: "text",
+                                                            text: flexData.value.gridButtons[2]?.emoji || "🧾",
+                                                            size: "xl",
+                                                            align: "center"
+                                                        },
+                                                        {
+                                                            type: "text",
+                                                            text: flexData.value.gridButtons[2]?.label || "商品型錄",
+                                                            size: "sm",
+                                                            align: "center",
+                                                            color: "#E6E6E6"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    type: "box",
+                                                    layout: "vertical",
+                                                    paddingAll: "12px",
+                                                    backgroundColor: "#2A2C31",
+                                                    cornerRadius: "12px",
+                                                    action: {
+                                                        type: "uri",
+                                                        label: flexData.value.gridButtons[3]?.label || "門市資訊",
+                                                        uri: flexData.value.gridButtons[3]?.uri || "#"
+                                                    },
+                                                    contents: [
+                                                        {
+                                                            type: "text",
+                                                            text: flexData.value.gridButtons[3]?.emoji || "📍",
+                                                            size: "xl",
+                                                            align: "center"
+                                                        },
+                                                        {
+                                                            type: "text",
+                                                            text: flexData.value.gridButtons[3]?.label || "門市資訊",
+                                                            size: "sm",
+                                                            align: "center",
+                                                            color: "#E6E6E6"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        footer: {
+                            type: "box",
+                            layout: "vertical",
+                            spacing: "sm",
+                            paddingAll: "8px",
+                            contents: [
+                                {
+                                    type: "button",
+                                    style: "primary",
+                                    color: flexData.value.videoFooterButtons[0]?.color || "#C9A24D",
+                                    height: "sm",
+                                    action: {
+                                        type: "uri",
+                                        label: flexData.value.videoFooterButtons[0]?.label || "🚀 啟動 AI 小幫手",
+                                        uri: flexData.value.videoFooterButtons[0]?.uri || "#"
+                                    }
+                                },
+                                {
+                                    type: "button",
+                                    style: "secondary",
+                                    height: "sm",
+                                    action: {
+                                        type: "uri",
+                                        label: flexData.value.videoFooterButtons[1]?.label || "📤 分享好友",
+                                        uri: flexData.value.videoFooterButtons[1]?.uri || "#"
+                                    }
+                                }
+                            ]
+                        },
+                        styles: {
+                            body: {
+                                backgroundColor: "#0F0F10"
+                            },
+                            footer: {
+                                backgroundColor: "#0F0F10"
+                            }
+                        }
                     };
                 }
             });
