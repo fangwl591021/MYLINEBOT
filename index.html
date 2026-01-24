@@ -4,372 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINEOA 插件管理平台</title>
-    <!-- 引入 LIFF SDK -->
+    
+    <!-- 引入依賴 -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- 引入 Lucide 圖標 -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- 引入 Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- 引入中文字體 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     
+    <!-- 引入自定義樣式 -->
+    <link rel="stylesheet" href="styles.css">
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f4f7f6;
-            overflow: hidden;
+        /* 內聯基本樣式 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-color: #f4f7f6; 
             height: 100vh;
         }
-        
-        #app {
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        .line-green { color: #00B900; }
-        .bg-line-green { background-color: #00B900; }
-        
-        /* 側邊欄樣式 */
-        .sidebar-container { 
-            background-color: #1e2124; 
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            flex-shrink: 0; 
-            overflow: hidden; 
-            z-index: 50;
-        }
-        
-        .w-expanded { 
-            width: 256px !important; 
-            min-width: 256px !important; 
-            max-width: 256px !important; 
-        }
-        
-        .w-collapsed { 
-            width: 80px !important; 
-            min-width: 80px !important; 
-            max-width: 80px !important; 
-        }
-        
-        .sidebar-item-active { 
-            background-color: #374151; 
-            color: white; 
-            border-left: 4px solid #00B900; 
-        }
-        
-        .submenu-item-active { 
-            color: #00B900; 
-            font-weight: bold; 
-        }
-        
-        /* 預覽視窗樣式 */
-        .preview-window { 
-            width: 300px; 
-            height: 560px; 
-            background: #0F0F10; 
-            border: 10px solid #333; 
-            border-radius: 32px; 
-            overflow-y: auto; 
-            position: relative; 
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
-        }
-        
-        .preview-window::-webkit-scrollbar { 
-            width: 0px; 
-        }
-        
-        /* 專案卡片樣式 */
-        .project-card { 
-            background: white; 
-            border-radius: 16px; 
-            overflow: hidden; 
-            transition: all 0.3s ease; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
-            border: 1px solid #e5e7eb;
-        }
-        
-        .project-card:hover { 
-            transform: translateY(-4px); 
-            box-shadow: 0 12px 24px rgba(0,0,0,0.1); 
-            border-color: #00B900;
-        }
-        
-        /* 模態視窗樣式 */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        /* 加載動畫 */
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #00B900;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* 其他必要的樣式 */
-        .no-scrollbar::-webkit-scrollbar { 
-            display: none; 
-        }
-        
-        .rotate-180 { 
-            transform: rotate(180deg); 
-        }
-        
-        .flex-bubble { 
-            background: #FFFFFF; 
-            border-radius: 12px; 
-            overflow: hidden; 
-            width: 250px; 
-            margin: 0 auto; 
-            border: 1px solid #333; 
-        }
-        
-        .flex-bubble-dark { 
-            background: #1F2024; 
-            color: white; 
-        }
-        
-        .chat-room-bg {
-            background-color: #7988a0;
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
+        #app { width: 100%; height: 100vh; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Vue 應用將在這裡渲染 -->
-    </div>
+    <div id="app"></div>
+    
+    <!-- 按順序加載 -->
+    <script src="utils.js"></script>
+    <script src="components.js"></script>
+    <script src="main.js"></script>
     
     <script>
-        // 確保在 DOM 加載後初始化
+        // 初始化圖標
         document.addEventListener('DOMContentLoaded', function() {
-            const { createApp, ref, computed, onMounted } = Vue;
-            
-            // 創建一個簡單的 Vue 應用來測試
-            const app = createApp({
-                setup() {
-                    const message = ref('LINEOA 插件管理平台');
-                    
-                    onMounted(() => {
-                        console.log('Vue 應用已掛載');
-                        
-                        // 初始化 Lucide 圖標
-                        if (window.lucide) {
-                            window.lucide.createIcons();
-                            console.log('Lucide 圖標已初始化');
-                        }
-                    });
-                    
-                    return {
-                        message
-                    };
-                },
-                
-                template: `
-                    <div class="flex h-screen bg-gray-100">
-                        <!-- 側邊欄 -->
-                        <div class="w-64 bg-gray-900 text-white p-4">
-                            <div class="flex items-center mb-8">
-                                <i class="fab fa-line text-3xl text-green-500 mr-3"></i>
-                                <h1 class="text-xl font-bold">LINEOA PLUG</h1>
-                            </div>
-                            
-                            <nav class="space-y-2">
-                                <a href="#" class="block py-2 px-4 bg-gray-800 rounded hover:bg-gray-700">
-                                    <i class="fas fa-chart-pie mr-2"></i> 儀表板總覽
-                                </a>
-                                <a href="#" class="block py-2 px-4 rounded hover:bg-gray-700">
-                                    <i class="fas fa-layer-group mr-2"></i> 插件開發管理
-                                </a>
-                                <a href="#" class="block py-2 px-4 rounded hover:bg-gray-700">
-                                    <i class="fas fa-folder-open mr-2"></i> 插件模板庫
-                                </a>
-                                <a href="#" class="block py-2 px-4 rounded hover:bg-gray-700">
-                                    <i class="fas fa-box mr-2"></i> 專案管理
-                                </a>
-                            </nav>
-                        </div>
-                        
-                        <!-- 主要內容 -->
-                        <div class="flex-1 flex flex-col">
-                            <!-- 頂部欄 -->
-                            <header class="bg-white shadow-sm p-4">
-                                <div class="flex justify-between items-center">
-                                    <h2 class="text-xl font-bold text-gray-800">{{ message }}</h2>
-                                    <div class="flex items-center space-x-4">
-                                        <button class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-                                            <i class="fas fa-sign-in-alt mr-2"></i> 登入 LINE
-                                        </button>
-                                        <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">
-                                            T
-                                        </div>
-                                    </div>
-                                </div>
-                            </header>
-                            
-                            <!-- 主內容區 -->
-                            <main class="flex-1 p-6 overflow-auto">
-                                <div class="max-w-6xl mx-auto">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        <!-- 卡片示例 -->
-                                        <div class="bg-white rounded-xl shadow-lg p-6">
-                                            <div class="flex items-center mb-4">
-                                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                                                    <i class="fas fa-layer-group text-blue-600 text-xl"></i>
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-bold text-gray-800">文章型 Flex 開發</h3>
-                                                    <p class="text-sm text-gray-500">創建單頁文章 Flex 訊息</p>
-                                                </div>
-                                            </div>
-                                            <button class="w-full mt-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                                                開始使用
-                                            </button>
-                                        </div>
-                                        
-                                        <div class="bg-white rounded-xl shadow-lg p-6">
-                                            <div class="flex items-center mb-4">
-                                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-                                                    <i class="fas fa-video text-purple-600 text-xl"></i>
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-bold text-gray-800">影片名片插件</h3>
-                                                    <p class="text-sm text-gray-500">創建影片名片 Flex 訊息</p>
-                                                </div>
-                                            </div>
-                                            <button class="w-full mt-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
-                                                開始使用
-                                            </button>
-                                        </div>
-                                        
-                                        <div class="bg-white rounded-xl shadow-lg p-6">
-                                            <div class="flex items-center mb-4">
-                                                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
-                                                    <i class="fas fa-shopping-cart text-orange-600 text-xl"></i>
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-bold text-gray-800">電商型插件</h3>
-                                                    <p class="text-sm text-gray-500">創建電商型 Flex 訊息</p>
-                                                </div>
-                                            </div>
-                                            <button class="w-full mt-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
-                                                開始使用
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- 統計數據 -->
-                                    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div class="bg-white rounded-xl shadow p-6">
-                                            <div class="flex items-center justify-between">
-                                                <div>
-                                                    <p class="text-gray-500">總專案數</p>
-                                                    <p class="text-3xl font-bold text-gray-800">12</p>
-                                                </div>
-                                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                                    <i class="fas fa-box text-green-600 text-xl"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="bg-white rounded-xl shadow p-6">
-                                            <div class="flex items-center justify-between">
-                                                <div>
-                                                    <p class="text-gray-500">本月推播</p>
-                                                    <p class="text-3xl font-bold text-gray-800">156</p>
-                                                </div>
-                                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                    <i class="fas fa-paper-plane text-blue-600 text-xl"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="bg-white rounded-xl shadow p-6">
-                                            <div class="flex items-center justify-between">
-                                                <div>
-                                                    <p class="text-gray-500">模板數</p>
-                                                    <p class="text-3xl font-bold text-gray-800">8</p>
-                                                </div>
-                                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                    <i class="fas fa-folder-open text-purple-600 text-xl"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- 快速開始 -->
-                                    <div class="mt-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl shadow-lg p-6 text-white">
-                                        <h3 class="text-2xl font-bold mb-2">快速開始</h3>
-                                        <p class="mb-4">選擇模板快速創建您的第一個 LINE Flex 訊息</p>
-                                        <div class="flex flex-wrap gap-3">
-                                            <button class="px-4 py-2 bg-white text-green-600 rounded-lg font-bold hover:bg-gray-100">
-                                                文章型模板
-                                            </button>
-                                            <button class="px-4 py-2 bg-white text-purple-600 rounded-lg font-bold hover:bg-gray-100">
-                                                影片名片模板
-                                            </button>
-                                            <button class="px-4 py-2 bg-white text-orange-600 rounded-lg font-bold hover:bg-gray-100">
-                                                電商型模板
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </main>
-                        </div>
-                    </div>
-                `
-            });
-            
-            // 掛載應用
-            app.mount('#app');
-            
-            console.log('應用程式初始化完成');
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
         });
     </script>
 </body>
