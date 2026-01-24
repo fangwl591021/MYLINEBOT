@@ -250,6 +250,7 @@
                 <!-- 單頁文章和影片名片的編輯器 -->
                 <div v-if="flexData.type !== 'ecommerce'" class="flex-grow overflow-y-auto p-8 bg-white shadow-inner border-r no-scrollbar">
                     <div class="max-w-4xl mx-auto">
+                        <!-- 共用頂部按鈕區域 -->
                         <div class="flex items-center justify-between mb-8">
                             <div>
                                 <h3 class="text-2xl font-bold text-gray-800">{{ flexData.type === 'video' ? '影片名片開發' : '文章型 Flex 開發' }}</h3>
@@ -267,6 +268,22 @@
                                 </button>
                                 <button @click="saveToCloudflare" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
                                     {{ isSaving ? '同步中...' : '儲存到雲端' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 專案顯示區域 -->
+                        <div v-if="currentProjectId" class="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-box text-purple-500"></i>
+                                    <div>
+                                        <div class="font-bold text-gray-800">{{ currentProjectName }}</div>
+                                        <div class="text-xs text-gray-500">專案ID: {{ currentProjectId }}</div>
+                                    </div>
+                                </div>
+                                <button @click="clearCurrentProject" class="text-sm text-gray-500 hover:text-red-500">
+                                    <i class="fas fa-times"></i> 清除選擇
                                 </button>
                             </div>
                         </div>
@@ -355,257 +372,305 @@
                 <!-- 電子商務版編輯器 -->
                 <div v-if="flexData.type === 'ecommerce'" class="flex w-full overflow-hidden">
                     <!-- 左側編輯器 -->
-                    <div class="w-[450px] bg-white border-r overflow-y-auto p-5 space-y-6 custom-scrollbar flex-shrink-0">
-                        <!-- Hero 設定 -->
-                        <div class="border-2 border-line-green rounded-xl bg-white overflow-hidden shadow-sm">
-                            <div class="p-3 bg-line-green border-b border-line-green flex items-center gap-2 font-bold text-white text-sm">
-                                <i data-lucide="image" class="w-4 h-4 text-white"></i> 頂部 Hero 視覺
-                            </div>
-                            <div class="p-4 space-y-4">
-                                <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-300">
-                                    <button @click="updateHeroType('image')" :class="ecomState.hero.type === 'image' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">靜態圖片</button>
-                                    <button @click="updateHeroType('video')" :class="ecomState.hero.type === 'video' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">影片播放</button>
-                                    <button @click="updateHeroType('none')" :class="ecomState.hero.type === 'none' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">無</button>
-                                </div>
-
-                                <div v-show="ecomState.hero.type !== 'none'" class="space-y-4">
-                                    <div>
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">顯示比例</label>
-                                        <select v-model="ecomState.hero.aspectRatio" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-2 focus:ring-line-green outline-none">
-                                            <option value="16:9">16:9 (寬螢幕)</option>
-                                            <option value="1:1">1:1 (正方形)</option>
-                                            <option value="4:3">4:3 (矩形)</option>
-                                            <option value="1.91:1">1.91:1 (橫幅)</option>
-                                            <option value="3:4">3:4 (直式)</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block mb-1">
-                                            <span class="text-[11px] font-bold text-slate-700 uppercase block">{{ ecomState.hero.type === 'video' ? '預覽封面圖 URL (Preview)' : '圖片網址 (Image URL)' }}</span>
-                                            <span class="text-[10px] text-slate-400 font-normal">※ 請輸入公開連結</span>
-                                        </label>
-                                        <input type="text" v-model="ecomState.hero.url" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
-                                    </div>
-                                    
-                                    <div v-if="ecomState.hero.type === 'video'">
-                                        <label class="block mb-1">
-                                            <span class="text-[11px] font-bold text-slate-700 uppercase block">影片網址 (Video URL)</span>
-                                            <span class="text-[10px] text-slate-400 font-normal">※ 請輸入 .mp4 結尾的影片連結</span>
-                                        </label>
-                                        <input type="text" v-model="ecomState.hero.videoUrl" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
-                                    </div>
-
-                                    <div>
-                                        <label class="block mb-1">
-                                            <span class="text-[11px] font-bold text-slate-700 uppercase block">點擊連結 (Action URL)</span>
-                                            <span class="text-[10px] text-slate-400 font-normal">※ 點擊圖片或影片後跳轉的網址</span>
-                                        </label>
-                                        <input type="text" v-model="ecomState.hero.link" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
-                                    </div>
-                                </div>
-
-                                <div v-show="ecomState.hero.type === 'none'" class="text-center py-4 text-xs text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                                    已隱藏 Hero 區塊
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Body 設定 -->
-                        <div class="border-2 border-line-green rounded-xl bg-white overflow-hidden shadow-sm">
-                            <div class="p-3 bg-line-green border-b border-line-green flex items-center justify-between font-bold text-white text-sm">
-                                <div class="flex items-center gap-2">
-                                    <i data-lucide="palette" class="w-4 h-4 text-white"></i> Body 內容與尺寸
-                                </div>
-                                <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded text-white font-mono">{{ ecomState.body.items.length }} items</span>
-                            </div>
-                            <div class="p-4 space-y-4">
-                                <!-- 尺寸與欄位 -->
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">卡片尺寸 (Size)</label>
-                                        <select v-model="ecomState.body.bubbleSize" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
-                                            <option value="mega">MEGA (標準)</option>
-                                            <option value="giga">GIGA (寬版)</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">每行欄數</label>
-                                        <select v-model="ecomState.body.columns" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
-                                            <option value="3">3 欄位</option>
-                                            <option value="4">4 欄位</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- 標籤顏色設定 -->
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">標籤背景色</label>
-                                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
-                                            <input type="color" v-model="ecomState.body.tagBgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
-                                            <input type="text" v-model="ecomState.body.tagBgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">標籤文字色</label>
-                                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
-                                            <input type="color" v-model="ecomState.body.tagTextColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
-                                            <input type="text" v-model="ecomState.body.tagTextColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 背景類型切換 -->
+                    <div class="flex-grow overflow-y-auto p-8 bg-white shadow-inner border-r no-scrollbar">
+                        <div class="max-w-4xl mx-auto">
+                            <!-- 共用頂部按鈕區域 -->
+                            <div class="flex items-center justify-between mb-8">
                                 <div>
-                                    <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景類型</label>
-                                    <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-300">
-                                        <button @click="updateBodyType('color')" :class="ecomState.body.bgType === 'color' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">純色背景</button>
-                                        <button @click="updateBodyType('image')" :class="ecomState.body.bgType === 'image' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">圖片背景</button>
-                                    </div>
+                                    <h3 class="text-2xl font-bold text-gray-800">電商型插件開發</h3>
+                                    <p class="text-sm text-gray-400 mt-1">編輯參數後，可儲存為專案或直接推播至 LINE。</p>
                                 </div>
-                                
-                                <!-- 背景詳細設定 -->
-                                <div class="space-y-4">
-                                    <div v-if="ecomState.body.bgType === 'color'">
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景底色</label>
-                                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
-                                            <input type="color" v-model="ecomState.body.bgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
-                                            <input type="text" v-model="ecomState.body.bgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                <div class="flex gap-2">
+                                    <button v-if="currentProjectId" @click="saveProject(true)" :disabled="isSaving" class="px-6 py-2.5 bg-purple-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300 flex items-center gap-2">
+                                        <i class="fas fa-save"></i> 更新專案
+                                    </button>
+                                    <button v-else @click="showNewProjectModal = true" :disabled="isSaving" class="px-6 py-2.5 bg-purple-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300 flex items-center gap-2">
+                                        <i class="fas fa-plus"></i> 儲存為新專案
+                                    </button>
+                                    <button @click="shareToLine" class="px-6 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2">
+                                        <i class="fas fa-paper-plane"></i> 🚀 直接推播
+                                    </button>
+                                    <button @click="saveToCloudflare" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
+                                        {{ isSaving ? '同步中...' : '儲存到雲端' }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 專案顯示區域 -->
+                            <div v-if="currentProjectId" class="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-box text-purple-500"></i>
+                                        <div>
+                                            <div class="font-bold text-gray-800">{{ currentProjectName }}</div>
+                                            <div class="text-xs text-gray-500">專案ID: {{ currentProjectId }}</div>
                                         </div>
                                     </div>
+                                    <button @click="clearCurrentProject" class="text-sm text-gray-500 hover:text-red-500">
+                                        <i class="fas fa-times"></i> 清除選擇
+                                    </button>
+                                </div>
+                            </div>
 
-                                    <div v-if="ecomState.body.bgType === 'image'" class="space-y-4">
+                            <!-- 編輯器內容 -->
+                            <div class="space-y-6">
+                                <!-- Hero 設定 -->
+                                <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                    <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-image mr-2 text-line-green"></i> 頂部 Hero 視覺</h4>
+                                    <div class="space-y-4">
+                                        <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-300">
+                                            <button @click="updateHeroType('image')" :class="ecomState.hero.type === 'image' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">靜態圖片</button>
+                                            <button @click="updateHeroType('video')" :class="ecomState.hero.type === 'video' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">影片播放</button>
+                                            <button @click="updateHeroType('none')" :class="ecomState.hero.type === 'none' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">無</button>
+                                        </div>
+
+                                        <div v-show="ecomState.hero.type !== 'none'" class="space-y-4">
+                                            <div>
+                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">顯示比例</label>
+                                                <select v-model="ecomState.hero.aspectRatio" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-2 focus:ring-line-green outline-none">
+                                                    <option value="16:9">16:9 (寬螢幕)</option>
+                                                    <option value="1:1">1:1 (正方形)</option>
+                                                    <option value="4:3">4:3 (矩形)</option>
+                                                    <option value="1.91:1">1.91:1 (橫幅)</option>
+                                                    <option value="3:4">3:4 (直式)</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label class="block mb-1">
+                                                    <span class="text-[11px] font-bold text-slate-700 uppercase block">{{ ecomState.hero.type === 'video' ? '預覽封面圖 URL (Preview)' : '圖片網址 (Image URL)' }}</span>
+                                                    <span class="text-[10px] text-slate-400 font-normal">※ 請輸入公開連結</span>
+                                                </label>
+                                                <input type="text" v-model="ecomState.hero.url" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
+                                            </div>
+                                            
+                                            <div v-if="ecomState.hero.type === 'video'">
+                                                <label class="block mb-1">
+                                                    <span class="text-[11px] font-bold text-slate-700 uppercase block">影片網址 (Video URL)</span>
+                                                    <span class="text-[10px] text-slate-400 font-normal">※ 請輸入 .mp4 結尾的影片連結</span>
+                                                </label>
+                                                <input type="text" v-model="ecomState.hero.videoUrl" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
+                                            </div>
+
+                                            <div>
+                                                <label class="block mb-1">
+                                                    <span class="text-[11px] font-bold text-slate-700 uppercase block">點擊連結 (Action URL)</span>
+                                                    <span class="text-[10px] text-slate-400 font-normal">※ 點擊圖片或影片後跳轉的網址</span>
+                                                </label>
+                                                <input type="text" v-model="ecomState.hero.link" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
+                                            </div>
+                                        </div>
+
+                                        <div v-show="ecomState.hero.type === 'none'" class="text-center py-4 text-xs text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                                            已隱藏 Hero 區塊
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Body 設定 -->
+                                <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                    <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center justify-between">
+                                        <span><i class="fas fa-palette mr-2 text-line-green"></i> Body 內容與尺寸</span>
+                                        <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded text-slate-700 font-mono">{{ ecomState.body.items.length }} items</span>
+                                    </h4>
+                                    <div class="space-y-4">
+                                        <!-- 尺寸與欄位 -->
                                         <div class="grid grid-cols-2 gap-3">
                                             <div>
-                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">圖片模式</label>
-                                                <select v-model="ecomState.body.bgMode" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
-                                                    <option value="cover">全版拉伸 (Cover)</option>
-                                                    <option value="top">等比縮放 (Fit Width)</option>
+                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">卡片尺寸 (Size)</label>
+                                                <select v-model="ecomState.body.bubbleSize" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
+                                                    <option value="mega">MEGA (標準)</option>
+                                                    <option value="giga">GIGA (寬版)</option>
                                                 </select>
                                             </div>
                                             <div>
-                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景底色 (補白用)</label>
+                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">每行欄數</label>
+                                                <select v-model="ecomState.body.columns" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
+                                                    <option value="3">3 欄位</option>
+                                                    <option value="4">4 欄位</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- 標籤顏色設定 -->
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">標籤背景色</label>
+                                                <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                                    <input type="color" v-model="ecomState.body.tagBgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                                    <input type="text" v-model="ecomState.body.tagBgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">標籤文字色</label>
+                                                <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                                    <input type="color" v-model="ecomState.body.tagTextColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                                    <input type="text" v-model="ecomState.body.tagTextColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 背景類型切換 -->
+                                        <div>
+                                            <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景類型</label>
+                                            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-300">
+                                                <button @click="updateBodyType('color')" :class="ecomState.body.bgType === 'color' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">純色背景</button>
+                                                <button @click="updateBodyType('image')" :class="ecomState.body.bgType === 'image' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">圖片背景</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 背景詳細設定 -->
+                                        <div class="space-y-4">
+                                            <div v-if="ecomState.body.bgType === 'color'">
+                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景底色</label>
                                                 <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
                                                     <input type="color" v-model="ecomState.body.bgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
                                                     <input type="text" v-model="ecomState.body.bgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <label class="block mb-1">
-                                                <span class="text-[11px] font-bold text-slate-700 uppercase block">背景圖片網址</span>
-                                                <span class="text-[10px] text-slate-400 font-normal">※ 滿版背景圖 (Absolute Background)</span>
-                                            </label>
-                                            <input type="text" v-model="ecomState.body.bg" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <div class="space-y-3">
-                                    <div v-for="(item, index) in ecomState.body.items" :key="index" class="p-3 bg-slate-50 border border-slate-300 rounded-xl space-y-2 relative group shadow-sm">
-                                        <button @click="deleteEcomItem(index)" class="absolute top-2 right-2 text-slate-400 hover:text-red-600 transition">
-                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            <div v-if="ecomState.body.bgType === 'image'" class="space-y-4">
+                                                <div class="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">圖片模式</label>
+                                                        <select v-model="ecomState.body.bgMode" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
+                                                            <option value="cover">全版拉伸 (Cover)</option>
+                                                            <option value="top">等比縮放 (Fit Width)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景底色 (補白用)</label>
+                                                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                                            <input type="color" v-model="ecomState.body.bgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                                            <input type="text" v-model="ecomState.body.bgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label class="block mb-1">
+                                                        <span class="text-[11px] font-bold text-slate-700 uppercase block">背景圖片網址</span>
+                                                        <span class="text-[10px] text-slate-400 font-normal">※ 滿版背景圖 (Absolute Background)</span>
+                                                    </label>
+                                                    <input type="text" v-model="ecomState.body.bg" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="space-y-3">
+                                            <div v-for="(item, index) in ecomState.body.items" :key="index" class="p-3 bg-slate-50 border border-slate-300 rounded-xl space-y-2 relative group shadow-sm">
+                                                <button @click="deleteEcomItem(index)" class="absolute top-2 right-2 text-slate-400 hover:text-red-600 transition">
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                </button>
+                                                <div class="flex items-center gap-3">
+                                                    <img :src="item.img" class="w-10 h-10 rounded-md object-cover border border-slate-300 bg-white">
+                                                    <div class="flex-1 grid grid-cols-1 gap-2 mr-6">
+                                                        <label class="text-[10px] text-slate-500 font-bold block mb-0.5">標籤文字</label>
+                                                        <input type="text" :value="item.title" @input="updateEcomItem(index, 'title', $event.target.value)" class="text-xs p-1.5 bg-white border border-slate-300 rounded font-bold text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="標籤文字">
+                                                    </div>
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <div class="flex-1">
+                                                        <label class="text-[10px] text-slate-500 font-bold block mb-0.5">圖片連結 (Image URL)</label>
+                                                        <input type="text" :value="item.img" @input="updateEcomItem(index, 'img', $event.target.value)" class="w-full text-[10px] p-1.5 bg-white border border-slate-300 rounded font-mono text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="圖片 URL">
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label class="text-[10px] text-slate-500 font-bold block mb-0.5">點擊連結 (Action URL)</label>
+                                                    <input type="text" :value="item.url" @input="updateEcomItem(index, 'url', $event.target.value)" class="w-full text-[10px] p-1.5 bg-white border border-slate-300 rounded font-mono text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button @click="addEcomItem" class="w-full py-2.5 border-2 border-dashed border-slate-400 rounded-xl text-slate-600 text-xs font-bold hover:border-line-green hover:text-line-green hover:bg-emerald-50 transition flex items-center justify-center gap-2">
+                                            <i data-lucide="plus" class="w-4 h-4"></i> 新增商品
                                         </button>
-                                        <div class="flex items-center gap-3">
-                                            <img :src="item.img" class="w-10 h-10 rounded-md object-cover border border-slate-300 bg-white">
-                                            <div class="flex-1 grid grid-cols-1 gap-2 mr-6">
-                                                <label class="text-[10px] text-slate-500 font-bold block mb-0.5">標籤文字</label>
-                                                <input type="text" :value="item.title" @input="updateEcomItem(index, 'title', $event.target.value)" class="text-xs p-1.5 bg-white border border-slate-300 rounded font-bold text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="標籤文字">
-                                            </div>
-                                        </div>
-                                        <div class="flex gap-2">
-                                            <div class="flex-1">
-                                                <label class="text-[10px] text-slate-500 font-bold block mb-0.5">圖片連結 (Image URL)</label>
-                                                <input type="text" :value="item.img" @input="updateEcomItem(index, 'img', $event.target.value)" class="w-full text-[10px] p-1.5 bg-white border border-slate-300 rounded font-mono text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="圖片 URL">
-                                            </div>
-                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Footer 設定 -->
+                                <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                    <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-mouse-pointer mr-2 text-line-green"></i> 底部按鈕</h4>
+                                    <div class="space-y-4">
+                                        
+                                        <!-- Footer 背景色 -->
                                         <div>
-                                            <label class="text-[10px] text-slate-500 font-bold block mb-0.5">點擊連結 (Action URL)</label>
-                                            <input type="text" :value="item.url" @input="updateEcomItem(index, 'url', $event.target.value)" class="w-full text-[10px] p-1.5 bg-white border border-slate-300 rounded font-mono text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button @click="addEcomItem" class="w-full py-2.5 border-2 border-dashed border-slate-400 rounded-xl text-slate-600 text-xs font-bold hover:border-line-green hover:text-line-green hover:bg-emerald-50 transition flex items-center justify-center gap-2">
-                                    <i data-lucide="plus" class="w-4 h-4"></i> 新增商品
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Footer 設定 -->
-                        <div class="border-2 border-line-green rounded-xl bg-white overflow-hidden shadow-sm">
-                            <div class="p-3 bg-line-green border-b border-line-green flex items-center gap-2 font-bold text-white text-sm">
-                                <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-white"></i> 底部按鈕
-                            </div>
-                            <div class="p-4 space-y-4">
-                                
-                                <!-- Footer 背景色 -->
-                                <div>
-                                    <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">底部背景顏色</label>
-                                    <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
-                                        <input type="color" v-model="ecomState.footer.bg" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
-                                        <input type="text" v-model="ecomState.footer.bg" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
-                                    </div>
-                                </div>
-
-                                <!-- Footer 說明文字開關 -->
-                                <div class="flex items-center justify-between">
-                                    <label class="text-[11px] font-bold text-slate-600 uppercase">啟用說明文字</label>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" v-model="ecomState.footer.textEnabled" @change="saveEcomHistory" class="sr-only peer">
-                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-line-green"></div>
-                                    </label>
-                                </div>
-
-                                <div v-show="ecomState.footer.textEnabled" class="space-y-3">
-                                    <div class="flex justify-between items-center">
-                                        <label class="block text-[11px] font-bold text-slate-600 uppercase">說明內容</label>
-                                        <div class="flex gap-2">
-                                            <!-- Text Color Picker -->
-                                            <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-1 py-0.5" title="文字顏色">
-                                                <input type="color" v-model="ecomState.footer.textColor" @change="saveEcomHistory" class="w-4 h-4 rounded cursor-pointer border-none p-0">
-                                                <input type="text" v-model="ecomState.footer.textColor" @input="saveEcomHistory" class="w-12 text-[10px] font-mono text-slate-600 outline-none uppercase">
-                                            </div>
-                                            <!-- Alignment -->
-                                            <div class="flex bg-slate-200 rounded p-0.5 space-x-0.5">
-                                                <button @click="updateFooterTextAlign('start')" :class="ecomState.footer.textAlign === 'start' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠左"><i data-lucide="align-left" class="w-3 h-3"></i></button>
-                                                <button @click="updateFooterTextAlign('center')" :class="ecomState.footer.textAlign === 'center' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="置中"><i data-lucide="align-center" class="w-3 h-3"></i></button>
-                                                <button @click="updateFooterTextAlign('end')" :class="ecomState.footer.textAlign === 'end' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠右"><i data-lucide="align-right" class="w-3 h-3"></i></button>
+                                            <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">底部背景顏色</label>
+                                            <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                                <input type="color" v-model="ecomState.footer.bg" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                                <input type="text" v-model="ecomState.footer.bg" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
                                             </div>
                                         </div>
+
+                                        <!-- Footer 說明文字開關 -->
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-[11px] font-bold text-slate-600 uppercase">啟用說明文字</label>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" v-model="ecomState.footer.textEnabled" @change="saveEcomHistory" class="sr-only peer">
+                                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-line-green"></div>
+                                            </label>
+                                        </div>
+
+                                        <div v-show="ecomState.footer.textEnabled" class="space-y-3">
+                                            <div class="flex justify-between items-center">
+                                                <label class="block text-[11px] font-bold text-slate-600 uppercase">說明內容</label>
+                                                <div class="flex gap-2">
+                                                    <!-- Text Color Picker -->
+                                                    <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-1 py-0.5" title="文字顏色">
+                                                        <input type="color" v-model="ecomState.footer.textColor" @change="saveEcomHistory" class="w-4 h-4 rounded cursor-pointer border-none p-0">
+                                                        <input type="text" v-model="ecomState.footer.textColor" @input="saveEcomHistory" class="w-12 text-[10px] font-mono text-slate-600 outline-none uppercase">
+                                                    </div>
+                                                    <!-- Alignment -->
+                                                    <div class="flex bg-slate-200 rounded p-0.5 space-x-0.5">
+                                                        <button @click="updateFooterTextAlign('start')" :class="ecomState.footer.textAlign === 'start' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠左"><i data-lucide="align-left" class="w-3 h-3"></i></button>
+                                                        <button @click="updateFooterTextAlign('center')" :class="ecomState.footer.textAlign === 'center' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="置中"><i data-lucide="align-center" class="w-3 h-3"></i></button>
+                                                        <button @click="updateFooterTextAlign('end')" :class="ecomState.footer.textAlign === 'end' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠右"><i data-lucide="align-right" class="w-3 h-3"></i></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <textarea v-model="ecomState.footer.text" @input="saveEcomHistory" rows="3" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="請輸入說明文字..."></textarea>
+                                        </div>
+
+                                        <div class="p-3 bg-slate-50 border border-slate-300 rounded-xl">
+                                            <div class="text-[11px] font-bold text-slate-700 mb-2">按鈕 1 (Primary)</div>
+                                            <div class="flex gap-2 mb-2">
+                                                <input type="text" v-model="ecomState.footer.btn1.label" @input="saveEcomHistory" class="flex-1 text-xs p-2 border border-slate-300 rounded bg-white focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="名稱">
+                                                <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-28">
+                                                    <input type="color" v-model="ecomState.footer.btn1.color" @change="saveEcomHistory" class="w-5 h-5 rounded cursor-pointer border-none shadow-sm">
+                                                    <input type="text" v-model="ecomState.footer.btn1.color" @input="saveEcomHistory" class="flex-1 text-[10px] font-mono text-slate-600 outline-none uppercase text-center">
+                                                </div>
+                                            </div>
+                                            <input type="text" v-model="ecomState.footer.btn1.uri" @input="saveEcomHistory" class="w-full text-xs p-2 border border-slate-300 rounded font-mono bg-white text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
+                                        </div>
+                                        <div class="p-3 bg-slate-50 border border-slate-300 rounded-xl">
+                                            <div class="text-[11px] font-bold text-slate-700 mb-2">按鈕 2 (Primary)</div>
+                                            <div class="flex gap-2 mb-2">
+                                                <input type="text" v-model="ecomState.footer.btn2.label" @input="saveEcomHistory" class="flex-1 text-xs p-2 border border-slate-300 rounded bg-white focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="名稱">
+                                                <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-28">
+                                                    <input type="color" v-model="ecomState.footer.btn2.color" @change="saveEcomHistory" class="w-5 h-5 rounded cursor-pointer border-none shadow-sm">
+                                                    <input type="text" v-model="ecomState.footer.btn2.color" @input="saveEcomHistory" class="flex-1 text-[10px] font-mono text-slate-600 outline-none uppercase text-center">
+                                                </div>
+                                            </div>
+                                            <input type="text" v-model="ecomState.footer.btn2.uri" @input="saveEcomHistory" class="w-full text-xs p-2 border border-slate-300 rounded font-mono bg-white text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
+                                        </div>
                                     </div>
-                                    <textarea v-model="ecomState.footer.text" @input="saveEcomHistory" rows="3" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="請輸入說明文字..."></textarea>
                                 </div>
 
-                                <div class="p-3 bg-slate-50 border border-slate-300 rounded-xl">
-                                    <div class="text-[11px] font-bold text-slate-700 mb-2">按鈕 1 (Primary)</div>
-                                    <div class="flex gap-2 mb-2">
-                                        <input type="text" v-model="ecomState.footer.btn1.label" @input="saveEcomHistory" class="flex-1 text-xs p-2 border border-slate-300 rounded bg-white focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="名稱">
-                                        <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-28">
-                                            <input type="color" v-model="ecomState.footer.btn1.color" @change="saveEcomHistory" class="w-5 h-5 rounded cursor-pointer border-none shadow-sm">
-                                            <input type="text" v-model="ecomState.footer.btn1.color" @input="saveEcomHistory" class="flex-1 text-[10px] font-mono text-slate-600 outline-none uppercase text-center">
-                                        </div>
+                                <!-- JSON 輸出 -->
+                                <div class="mt-12 mb-20">
+                                    <div class="flex items-center justify-between mb-3 px-2">
+                                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"><i class="fas fa-code mr-2"></i>Raw Flex JSON Data</span>
+                                        <button @click="copyEcommerceJson" class="text-[10px] text-line-green font-bold hover:underline uppercase">Copy JSON</button>
                                     </div>
-                                    <input type="text" v-model="ecomState.footer.btn1.uri" @input="saveEcomHistory" class="w-full text-xs p-2 border border-slate-300 rounded font-mono bg-white text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
-                                </div>
-                                <div class="p-3 bg-slate-50 border border-slate-300 rounded-xl">
-                                    <div class="text-[11px] font-bold text-slate-700 mb-2">按鈕 2 (Primary)</div>
-                                    <div class="flex gap-2 mb-2">
-                                        <input type="text" v-model="ecomState.footer.btn2.label" @input="saveEcomHistory" class="flex-1 text-xs p-2 border border-slate-300 rounded bg-white focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="名稱">
-                                        <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-28">
-                                            <input type="color" v-model="ecomState.footer.btn2.color" @change="saveEcomHistory" class="w-5 h-5 rounded cursor-pointer border-none shadow-sm">
-                                            <input type="text" v-model="ecomState.footer.btn2.color" @input="saveEcomHistory" class="flex-1 text-[10px] font-mono text-slate-600 outline-none uppercase text-center">
-                                        </div>
+                                    <div class="bg-[#1e2124] rounded-2xl p-6 border border-gray-700 shadow-xl overflow-hidden">
+                                        <pre class="text-[11px] text-green-400 font-mono leading-relaxed h-48 overflow-y-auto no-scrollbar">{{ generateEcommerceJson() }}</pre>
                                     </div>
-                                    <input type="text" v-model="ecomState.footer.btn2.uri" @input="saveEcomHistory" class="w-full text-xs p-2 border border-slate-300 rounded font-mono bg-white text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- 右側預覽區 -->
-                    <div class="flex-1 bg-slate-100 relative overflow-hidden flex flex-col">
+                    <div class="w-[360px] flex-shrink-0 bg-slate-100 relative overflow-hidden flex flex-col">
                         <div class="chat-room-bg custom-scrollbar">
                             <!-- 模擬日期標籤 -->
                             <div class="text-center my-4">
@@ -676,10 +741,6 @@
                             
                             <!-- 底部留白 -->
                             <div class="h-10 w-full shrink-0"></div>
-                        </div>
-
-                        <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl text-sm font-medium transform translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-2 z-50">
-                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> JSON 已複製
                         </div>
                     </div>
                 </div>
@@ -1273,6 +1334,17 @@ createApp({
       return flex;
     };
 
+    // 複製電子商務版 JSON
+    const copyEcommerceJson = () => { 
+      const el = document.createElement('textarea'); 
+      el.value = JSON.stringify(generateEcommerceJson(), null, 2); 
+      document.body.appendChild(el); 
+      el.select(); 
+      document.execCommand('copy'); 
+      document.body.removeChild(el); 
+      alert('JSON 已複製！'); 
+    };
+
     // 原有數據
     const flexData = ref({
       type: 'standard', 
@@ -1824,7 +1896,7 @@ createApp({
       liff.shareTargetPicker([{ 
         type: "flex", 
         altText: "分享客製化插件訊息", 
-        contents: generatedJson.value 
+        contents: flexData.value.type === 'ecommerce' ? generateEcommerceJson() : generatedJson.value
       }])
       .then(res => { 
         if (res) alert("發送成功！"); 
@@ -1847,7 +1919,7 @@ createApp({
           type: flexData.value.type,
           name: flexData.value.type === 'ecommerce' ? '電商型專案' : (flexData.value.title || flexData.value.headerName || '未命名專案'),
           params: flexData.value.type === 'ecommerce' ? ecomState.value : flexData.value,
-          flexPayload: generatedJson.value
+          flexPayload: flexData.value.type === 'ecommerce' ? generateEcommerceJson() : generatedJson.value
         };
 
         const response = await fetch(`${WORKER_URL}/api/plugins/save`, {
@@ -1915,7 +1987,7 @@ createApp({
           description: newProject.value.description,
           type: flexData.value.type,
           data: flexData.value.type === 'ecommerce' ? JSON.stringify(ecomState.value) : JSON.stringify(flexData.value),
-          flex_json: JSON.stringify(generatedJson.value)
+          flex_json: flexData.value.type === 'ecommerce' ? JSON.stringify(generateEcommerceJson()) : JSON.stringify(generatedJson.value)
         };
 
         if (isUpdate) {
@@ -2176,7 +2248,9 @@ createApp({
       deleteEcomItem,
       getAspectClass,
       getTextAlignClass,
-      saveEcomHistory
+      saveEcomHistory,
+      generateEcommerceJson,
+      copyEcommerceJson
     };
   }
 }).mount('#app');
