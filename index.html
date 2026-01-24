@@ -58,6 +58,44 @@
         
         /* 側邊欄收合時的動畫效果 */
         .sidebar-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* 專案卡片 */
+        .project-card { 
+            background: white; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            transition: all 0.3s ease; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            border: 1px solid #e5e7eb;
+        }
+        .project-card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1); 
+            border-color: #00B900;
+        }
+        
+        /* 模態視窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -65,11 +103,10 @@
 <div id="app" class="flex h-screen overflow-hidden text-gray-800">
     <!-- 側邊欄 Sidebar -->
     <aside :class="isSidebarCollapsed ? 'w-collapsed' : 'w-expanded'" class="sidebar-container text-gray-400 shadow-2xl">
-        <!-- Logo 區 - 使用條件渲染來切換顯示 -->
+        <!-- Logo 區 -->
         <div class="h-16 flex items-center border-b border-gray-700 overflow-hidden flex-shrink-0 sidebar-transition" 
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6 justify-start'">
             <i class="fab fa-line text-3xl line-green"></i>
-            <!-- 只有在側邊欄展開時才顯示文字 -->
             <span v-if="!isSidebarCollapsed" class="text-white text-xl font-bold ml-4 tracking-tighter whitespace-nowrap uppercase font-mono opacity-0 transition-opacity duration-300" 
                   :class="{'opacity-100': !isSidebarCollapsed}">
                 LINEOA PLUG
@@ -84,21 +121,19 @@
                class="flex items-center py-4 hover:bg-gray-700 transition-colors sidebar-transition"
                :style="isSidebarCollapsed ? 'justify-content: center; padding-left: 0; padding-right: 0;' : 'padding-left: 1.5rem; padding-right: 1.5rem;'">
                 <i class="fas fa-chart-pie w-8 text-lg text-center flex-shrink-0"></i>
-                <!-- 只有在側邊欄展開時才顯示文字 -->
                 <span v-if="!isSidebarCollapsed" class="ml-2 font-medium opacity-0 transition-opacity duration-300"
                       :class="{'opacity-100': !isSidebarCollapsed}">
                     儀表板總覽
                 </span>
             </a>
 
-            <!-- 插件管理 -->
+            <!-- 插件開發管理 -->
             <div>
                 <button @click="toggleSidebarMenu" 
                         :class="{'text-white': currentTab === 'messages'}"
                         class="w-full flex items-center py-4 hover:bg-gray-700 focus:outline-none overflow-hidden sidebar-transition"
                         :style="isSidebarCollapsed ? 'justify-content: center; padding-left: 0; padding-right: 0;' : 'padding-left: 1.5rem; padding-right: 1.5rem;'">
                     <i class="fas fa-layer-group w-8 text-lg text-center flex-shrink-0"></i>
-                    <!-- 只有在側邊欄展開時才顯示文字和箭頭 -->
                     <template v-if="!isSidebarCollapsed">
                         <span class="ml-2 font-medium opacity-0 transition-opacity duration-300"
                               :class="{'opacity-100': !isSidebarCollapsed}">
@@ -109,7 +144,6 @@
                     </template>
                 </button>
                 
-                <!-- 子選單 - 只在展開且子選單開啟時顯示 -->
                 <div v-if="isMessageMenuOpen && !isSidebarCollapsed" class="bg-black bg-opacity-20 py-2 sidebar-transition">
                     <a href="#" @click="switchSubTab('messages', 'single')" 
                        :class="{'submenu-item-active': currentSubTab === 'single'}" 
@@ -124,15 +158,27 @@
                 </div>
             </div>
 
+            <!-- 插件模板庫 -->
             <a href="#" @click="switchTab('templates')" 
                :class="{'sidebar-item-active': currentTab === 'templates'}"
                class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
                :style="isSidebarCollapsed ? 'justify-content: center; padding-left: 0; padding-right: 0;' : 'padding-left: 1.5rem; padding-right: 1.5rem;'">
                 <i class="fas fa-folder-open w-8 text-lg text-center flex-shrink-0"></i>
-                <!-- 只有在側邊欄展開時才顯示文字 -->
                 <span v-if="!isSidebarCollapsed" class="ml-2 font-medium opacity-0 transition-opacity duration-300"
                       :class="{'opacity-100': !isSidebarCollapsed}">
                     插件模板庫
+                </span>
+            </a>
+
+            <!-- 專案管理 -->
+            <a href="#" @click="switchTab('projects')" 
+               :class="{'sidebar-item-active': currentTab === 'projects'}"
+               class="flex items-center py-4 hover:bg-gray-700 mt-2 sidebar-transition"
+               :style="isSidebarCollapsed ? 'justify-content: center; padding-left: 0; padding-right: 0;' : 'padding-left: 1.5rem; padding-right: 1.5rem;'">
+                <i class="fas fa-box w-8 text-lg text-center flex-shrink-0"></i>
+                <span v-if="!isSidebarCollapsed" class="ml-2 font-medium opacity-0 transition-opacity duration-300"
+                      :class="{'opacity-100': !isSidebarCollapsed}">
+                    專案管理
                 </span>
             </a>
         </nav>
@@ -141,7 +187,6 @@
         <button @click="isSidebarCollapsed = !isSidebarCollapsed" 
                 class="p-4 w-full flex items-center justify-center border-t border-gray-700 hover:text-white transition-colors text-gray-500 bg-gray-900 bg-opacity-30 sidebar-transition">
             <i class="fas sidebar-transition" :class="isSidebarCollapsed ? 'fa-indent text-xl' : 'fa-outdent text-xl'"></i>
-            <!-- 只有在側邊欄展開時才顯示文字 -->
             <span v-if="!isSidebarCollapsed" class="ml-3 text-xs font-bold uppercase tracking-widest opacity-0 transition-opacity duration-300"
                   :class="{'opacity-100': !isSidebarCollapsed}">
                 收合左側欄
@@ -179,7 +224,13 @@
                                 <p class="text-sm text-gray-400 mt-1">編輯參數後，可透過 Worker 代理儲存或直接推播至 LINE。</p>
                             </div>
                             <div class="flex gap-2">
-                                <button @click="shareToLine" class="px-6 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2 transition-all">
+                                <button v-if="currentProjectId" @click="saveProject(true)" :disabled="isSaving" class="px-6 py-2.5 bg-purple-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300 flex items-center gap-2">
+                                    <i class="fas fa-save"></i> 更新專案
+                                </button>
+                                <button v-else @click="showNewProjectModal = true" :disabled="isSaving" class="px-6 py-2.5 bg-purple-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300 flex items-center gap-2">
+                                    <i class="fas fa-plus"></i> 儲存為新專案
+                                </button>
+                                <button @click="shareToLine" class="px-6 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2">
                                     <i class="fas fa-paper-plane"></i> 🚀 推播分享
                                 </button>
                                 <button @click="saveToWorker" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
@@ -188,8 +239,25 @@
                             </div>
                         </div>
 
+                        <!-- 專案選擇器（如果正在編輯現有專案） -->
+                        <div v-if="currentProjectId" class="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-box text-purple-500"></i>
+                                    <div>
+                                        <div class="font-bold text-gray-800">{{ currentProjectName }}</div>
+                                        <div class="text-xs text-gray-500">專案ID: {{ currentProjectId }}</div>
+                                    </div>
+                                </div>
+                                <button @click="clearCurrentProject" class="text-sm text-gray-500 hover:text-red-500">
+                                    <i class="fas fa-times"></i> 清除選擇
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- 編輯器內容 -->
                         <div v-if="flexData.type === 'standard'" class="space-y-6">
+                            <!-- 原本的編輯器內容 -->
                             <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
                                 <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-image mr-2 text-line-green"></i> 視覺內容設定</h4>
                                 <div class="space-y-4">
@@ -218,6 +286,7 @@
                         </div>
 
                         <div v-if="flexData.type === 'video'" class="space-y-6">
+                            <!-- 原本的影片編輯器內容 -->
                             <div class="bg-[#f8fafc] p-6 rounded-2xl border border-gray-100 shadow-sm">
                                 <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-id-card mr-2 text-line-green"></i> 影片與名片 Header 設定</h4>
                                 <div class="grid grid-cols-2 gap-4">
@@ -271,6 +340,7 @@
 
                 <!-- 右側：手機預覽區 -->
                 <div class="w-[360px] flex-shrink-0 bg-gray-50 flex items-center justify-center py-8 shadow-inner overflow-y-auto no-scrollbar">
+                    <!-- 原本的預覽區 -->
                     <div class="flex flex-col items-center gap-4">
                         <div class="preview-window no-scrollbar shadow-2xl">
                             <div class="p-3 border-b border-gray-800 bg-[#1A1B1E] flex items-center gap-2 sticky top-0 z-50">
@@ -278,7 +348,6 @@
                                 <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">LINE Preview</span>
                             </div>
 
-                            <!-- 預覽 A -->
                             <div v-if="flexData.type === 'standard'" class="p-4">
                                 <div class="flex-bubble shadow-xl relative overflow-hidden">
                                     <div class="relative">
@@ -295,7 +364,6 @@
                                 </div>
                             </div>
 
-                            <!-- 預覽 B -->
                             <div v-if="flexData.type === 'video'" class="p-4">
                                 <div class="flex-bubble flex-bubble-dark shadow-2xl border-gray-800 overflow-hidden">
                                     <div class="header-box">
@@ -312,7 +380,6 @@
                                             <div class="text-[8px] text-gray-300 font-bold truncate uppercase tracking-tighter">{{grid.label || 'Grid'}}</div>
                                         </div>
                                     </div>
-                                    <!-- 底部按鈕顯示 -->
                                     <div class="p-3 pt-0 space-y-2 bg-[#0F0F10]">
                                         <button v-for="(vBtn, vI) in flexData.videoFooterButtons" :key="vI" 
                                                 class="w-full py-2 text-[10px] font-bold rounded shadow-md transition-all active:scale-95"
@@ -355,8 +422,166 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- 專案管理頁面 -->
+            <div v-if="currentTab === 'projects'" class="w-full overflow-y-auto p-8">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-800 mb-2">專案管理</h3>
+                            <p class="text-gray-500">管理您的插件設計專案，可以儲存、編輯和刪除</p>
+                        </div>
+                        <button @click="showNewProjectModal = true" 
+                                class="px-6 py-3 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2">
+                            <i class="fas fa-plus"></i> 新增專案
+                        </button>
+                    </div>
+                    
+                    <!-- 專案篩選器 -->
+                    <div class="mb-6 p-4 bg-white rounded-xl border shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1">
+                                <input type="text" v-model="projectSearch" 
+                                       placeholder="搜尋專案名稱或類型..." 
+                                       class="w-full px-4 py-2 border rounded-lg focus:border-line-green outline-none">
+                            </div>
+                            <div class="flex gap-2">
+                                <button @click="loadProjects" class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100">
+                                    <i class="fas fa-sync-alt"></i> 重新整理
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 專案列表 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="project in filteredProjects" :key="project.id" 
+                             class="project-card">
+                            <div class="p-5">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="px-2 py-1 text-xs rounded-full" 
+                                                  :class="project.type === 'video' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'">
+                                                {{ project.type === 'video' ? '影片型' : '文章型' }}
+                                            </span>
+                                            <span class="text-xs text-gray-500">{{ formatDate(project.created_at) }}</span>
+                                        </div>
+                                        <h4 class="font-bold text-lg text-gray-800">{{ project.name }}</h4>
+                                        <p class="text-sm text-gray-500 mt-1">{{ project.description || '未添加描述' }}</p>
+                                    </div>
+                                    <button @click="deleteProject(project.id)" 
+                                            class="text-gray-400 hover:text-red-500 transition-colors">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-4 flex gap-2">
+                                    <button @click="loadProject(project)" 
+                                            class="flex-1 py-2 bg-line-green text-white rounded-lg text-sm font-bold hover:opacity-90">
+                                        <i class="fas fa-edit"></i> 編輯
+                                    </button>
+                                    <button @click="shareProject(project)" 
+                                            class="flex-1 py-2 bg-blue-500 text-white rounded-lg text-sm font-bold hover:opacity-90">
+                                        <i class="fas fa-paper-plane"></i> 推播
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 無專案時的提示 -->
+                    <div v-if="projects.length === 0" class="text-center py-16">
+                        <i class="fas fa-box-open text-5xl text-gray-300 mb-4"></i>
+                        <h4 class="text-xl font-bold text-gray-500 mb-2">尚無專案</h4>
+                        <p class="text-gray-400 mb-6">開始創建您的第一個插件專案吧！</p>
+                        <button @click="showNewProjectModal = true" 
+                                class="px-6 py-3 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90">
+                            創建第一個專案
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
+    
+    <!-- 新增專案模態視窗 -->
+    <div v-if="showNewProjectModal" class="modal-overlay" @click.self="showNewProjectModal = false">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-800">儲存為新專案</h3>
+                <button @click="showNewProjectModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">專案名稱 *</label>
+                    <input type="text" v-model="newProject.name" 
+                           class="w-full px-4 py-2 border rounded-lg focus:border-line-green outline-none"
+                           placeholder="例如：產品介紹卡片">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">專案描述</label>
+                    <textarea v-model="newProject.description" rows="3"
+                              class="w-full px-4 py-2 border rounded-lg focus:border-line-green outline-none"
+                              placeholder="描述此專案的用途和內容"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">專案類型</label>
+                    <div class="flex gap-2">
+                        <button @click="newProject.type = 'standard'" 
+                                :class="newProject.type === 'standard' ? 'bg-green-100 text-green-700 border-green-300' : 'bg-gray-100 text-gray-700'"
+                                class="flex-1 py-2 border rounded-lg text-sm font-medium">
+                            文章型
+                        </button>
+                        <button @click="newProject.type = 'video'" 
+                                :class="newProject.type === 'video' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-gray-100 text-gray-700'"
+                                class="flex-1 py-2 border rounded-lg text-sm font-medium">
+                            影片型
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 flex gap-3">
+                <button @click="showNewProjectModal = false" 
+                        class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">
+                    取消
+                </button>
+                <button @click="saveProject(false)" 
+                        :disabled="!newProject.name || isSaving"
+                        class="flex-1 py-3 bg-line-green text-white rounded-lg font-bold hover:opacity-90 disabled:bg-gray-300">
+                    {{ isSaving ? '儲存中...' : '儲存專案' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 刪除確認模態視窗 -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
+        <div class="modal-content">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">確認刪除</h3>
+                <p class="text-gray-600 mb-6">您確定要刪除此專案嗎？此動作無法復原。</p>
+                
+                <div class="flex gap-3">
+                    <button @click="showDeleteConfirm = false" 
+                            class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">
+                        取消
+                    </button>
+                    <button @click="confirmDelete" 
+                            class="flex-1 py-3 bg-red-500 text-white rounded-lg font-bold hover:opacity-90">
+                        確認刪除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -364,9 +589,13 @@
 
     // --- 設定區 ---
     const WORKER_API_URL = "https://lineoa.fangwl591021.workers.dev/";
+    const GOOGLE_SHEET_ID = "1qQjIMf8WDAuklmqz_sqfQoDysttMETJqcy69mdkqXyM";
+    const GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json`;
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxX3qfauYsWk4RFhI0pP_cHcM1fMbhcacEj_MPXqIEl8PqbbmIT6Fd4sOkfV8T-sF4-/exec";
 
     createApp({
         setup() {
+            // 狀態變數
             const isSidebarCollapsed = ref(false);
             const isMessageMenuOpen = ref(true);
             const currentTab = ref('messages');
@@ -374,6 +603,22 @@
             const isSaving = ref(false);
             const isLoggedIn = ref(false);
             const isInIframe = ref(false);
+            
+            // 專案相關狀態
+            const showNewProjectModal = ref(false);
+            const showDeleteConfirm = ref(false);
+            const projectSearch = ref('');
+            const projects = ref([]);
+            const currentProjectId = ref(null);
+            const currentProjectName = ref('');
+            const projectToDelete = ref(null);
+            
+            // 新專案資料
+            const newProject = ref({
+                name: '',
+                description: '',
+                type: 'standard'
+            });
 
             onMounted(() => {
                 isInIframe.value = window.self !== window.top;
@@ -383,6 +628,8 @@
                         isLoggedIn.value = liff.isLoggedIn();
                     }).catch(err => console.error("LIFF Init failed", err));
                 }
+                // 載入專案列表
+                loadProjects();
             });
 
             // 初始化數據
@@ -457,9 +704,29 @@
                 }
             ]);
 
-            const pageTitle = computed(() => currentTab.value === 'templates' ? '插件模板選擇中心' : '插件開發管理平台');
+            // 計算屬性
+            const pageTitle = computed(() => {
+                const titles = {
+                    'dashboard': '儀表板總覽',
+                    'messages': '插件開發管理平台',
+                    'templates': '插件模板選擇中心',
+                    'projects': '專案管理'
+                };
+                return titles[currentTab.value] || 'LINEOA 插件管理平台';
+            });
             
+            const filteredProjects = computed(() => {
+                if (!projectSearch.value) return projects.value;
+                const search = projectSearch.value.toLowerCase();
+                return projects.value.filter(project => 
+                    project.name.toLowerCase().includes(search) ||
+                    project.type.toLowerCase().includes(search) ||
+                    (project.description && project.description.toLowerCase().includes(search))
+                );
+            });
+
             const generatedJson = computed(() => {
+                // 保持原有的 JSON 生成邏輯
                 if (flexData.value.type === 'standard') {
                     const contents = [
                         { 
@@ -754,11 +1021,17 @@
                 }
             });
 
-            const switchTab = (t) => currentTab.value = t;
+            // 方法
+            const switchTab = (t) => {
+                currentTab.value = t;
+                if (t === 'projects') {
+                    loadProjects();
+                }
+            };
+            
             const toggleSidebarMenu = () => { 
                 if (isSidebarCollapsed.value) {
                     isSidebarCollapsed.value = false;
-                    // 給一點時間讓側邊欄展開後再打開子選單
                     setTimeout(() => {
                         isMessageMenuOpen.value = true;
                     }, 100);
@@ -766,16 +1039,19 @@
                     isMessageMenuOpen.value = !isMessageMenuOpen.value;
                 }
             };
+            
             const switchSubTab = (t, s) => { 
                 currentTab.value = t; 
                 currentSubTab.value = s; 
                 flexData.value.type = (s === 'video' ? 'video' : 'standard'); 
             };
+            
             const applyTemplate = (tpl) => { 
                 flexData.value = JSON.parse(JSON.stringify(tpl.payload)); 
                 currentTab.value = 'messages'; 
                 currentSubTab.value = (tpl.type === 'video' ? 'video' : 'single'); 
             };
+            
             const addButton = () => { 
                 if (flexData.value.buttons.length < 3) {
                     flexData.value.buttons.push({ 
@@ -785,7 +1061,9 @@
                     }); 
                 }
             };
+            
             const removeButton = (idx) => flexData.value.buttons.splice(idx, 1);
+            
             const copyJson = () => { 
                 const el = document.createElement('textarea'); 
                 el.value = JSON.stringify(generatedJson.value, null, 2); 
@@ -818,6 +1096,211 @@
                 .catch(err => alert("發送失敗：" + err));
             };
 
+            // 載入專案列表
+            const loadProjects = async () => {
+                try {
+                    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getProjects`);
+                    const data = await response.json();
+                    if (data.success) {
+                        projects.value = data.projects;
+                    } else {
+                        console.error('載入專案失敗:', data.message);
+                    }
+                } catch (error) {
+                    console.error('載入專案時發生錯誤:', error);
+                    // 模擬數據用於演示
+                    projects.value = [
+                        {
+                            id: '1',
+                            name: '產品介紹卡片',
+                            description: '用於展示公司產品的 Flex Message',
+                            type: 'standard',
+                            data: flexData.value,
+                            created_at: new Date().toISOString()
+                        }
+                    ];
+                }
+            };
+
+            // 儲存專案
+            const saveProject = async (isUpdate = false) => {
+                if (!newProject.value.name && !isUpdate) {
+                    alert('請輸入專案名稱');
+                    return;
+                }
+
+                isSaving.value = true;
+                try {
+                    const projectData = {
+                        id: isUpdate ? currentProjectId.value : null,
+                        name: isUpdate ? currentProjectName.value : newProject.value.name,
+                        description: newProject.value.description,
+                        type: flexData.value.type,
+                        data: JSON.stringify(flexData.value),
+                        flex_json: JSON.stringify(generatedJson.value)
+                    };
+
+                    const action = isUpdate ? 'updateProject' : 'createProject';
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: action,
+                            ...projectData
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert(isUpdate ? '專案更新成功！' : '專案儲存成功！');
+                        
+                        if (!isUpdate) {
+                            currentProjectId.value = result.id;
+                            currentProjectName.value = newProject.value.name;
+                            showNewProjectModal.value = false;
+                            newProject.value = {
+                                name: '',
+                                description: '',
+                                type: 'standard'
+                            };
+                        }
+                        
+                        loadProjects();
+                        switchTab('projects');
+                    } else {
+                        alert('儲存失敗: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('儲存專案時發生錯誤:', error);
+                    alert('儲存失敗，請稍後再試');
+                } finally {
+                    isSaving.value = false;
+                }
+            };
+
+            // 載入專案
+            const loadProject = (project) => {
+                try {
+                    if (project.data) {
+                        const projectData = typeof project.data === 'string' ? 
+                            JSON.parse(project.data) : project.data;
+                        
+                        flexData.value = projectData;
+                        currentProjectId.value = project.id;
+                        currentProjectName.value = project.name;
+                        
+                        // 切換到編輯頁面
+                        currentTab.value = 'messages';
+                        currentSubTab.value = project.type === 'video' ? 'video' : 'single';
+                        
+                        alert(`已載入專案: ${project.name}`);
+                    }
+                } catch (error) {
+                    console.error('載入專案資料時發生錯誤:', error);
+                    alert('載入專案失敗');
+                }
+            };
+
+            // 刪除專案
+            const deleteProject = (projectId) => {
+                projectToDelete.value = projectId;
+                showDeleteConfirm.value = true;
+            };
+
+            const confirmDelete = async () => {
+                try {
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'deleteProject',
+                            id: projectToDelete.value
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('專案刪除成功！');
+                        
+                        // 如果刪除的是當前正在編輯的專案，清除狀態
+                        if (currentProjectId.value === projectToDelete.value) {
+                            clearCurrentProject();
+                        }
+                        
+                        loadProjects();
+                    } else {
+                        alert('刪除失敗: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('刪除專案時發生錯誤:', error);
+                    alert('刪除失敗，請稍後再試');
+                } finally {
+                    showDeleteConfirm.value = false;
+                    projectToDelete.value = null;
+                }
+            };
+
+            // 清除當前專案
+            const clearCurrentProject = () => {
+                currentProjectId.value = null;
+                currentProjectName.value = '';
+                // 重置為預設值
+                flexData.value = {
+                    type: 'standard', 
+                    imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
+                    aspectRatio: '20:13', 
+                    title: '', 
+                    subtitle: '', 
+                    showBadge: true, 
+                    badgeColor: '#FF0000',
+                    buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }]
+                };
+            };
+
+            // 分享專案
+            const shareProject = async (project) => {
+                try {
+                    const flexJson = typeof project.flex_json === 'string' ? 
+                        JSON.parse(project.flex_json) : project.flex_json;
+                    
+                    if (!liff.isLoggedIn()) { 
+                        alert("請先登入 LINE。"); 
+                        liffLogin(); 
+                        return; 
+                    }
+                    
+                    liff.shareTargetPicker([{ 
+                        type: "flex", 
+                        altText: `分享專案: ${project.name}`, 
+                        contents: flexJson
+                    }])
+                    .then(res => { 
+                        if (res) alert("專案推播成功！"); 
+                    })
+                    .catch(err => alert("推播失敗：" + err));
+                } catch (error) {
+                    console.error('分享專案時發生錯誤:', error);
+                    alert('分享失敗');
+                }
+            };
+
+            // 格式化日期
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            };
+
+            // 原有的儲存到 Worker 方法
             const saveToWorker = async () => {
                 isSaving.value = true;
                 try {
@@ -846,8 +1329,16 @@
                 currentSubTab, 
                 flexData, 
                 templates, 
+                projects,
+                projectSearch,
+                newProject,
+                currentProjectId,
+                currentProjectName,
+                showNewProjectModal,
+                showDeleteConfirm,
                 pageTitle, 
                 generatedJson, 
+                filteredProjects,
                 isSaving, 
                 isLoggedIn, 
                 isInIframe, 
@@ -860,7 +1351,15 @@
                 removeButton, 
                 copyJson, 
                 saveToWorker, 
-                shareToLine 
+                shareToLine,
+                loadProjects,
+                saveProject,
+                loadProject,
+                deleteProject,
+                confirmDelete,
+                clearCurrentProject,
+                shareProject,
+                formatDate
             }
         }
     }).mount('#app');
