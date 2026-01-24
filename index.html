@@ -8,6 +8,7 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
@@ -101,6 +102,36 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* 電子商務版專用樣式 */
+        .chat-room-bg {
+            background-color: #7988a0;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .flex-bubble-container {
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        
+        .border-line-green { border-color: #06C755; }
+        .text-line-green { color: #06C755; }
+
+        .aspect-1-1 { aspect-ratio: 1 / 1; }
+        .aspect-16-9 { aspect-ratio: 16 / 9; }
+        .aspect-4-3 { aspect-ratio: 4 / 3; }
+        .aspect-1_91-1 { aspect-ratio: 1.91 / 1; }
+        .aspect-3-4 { aspect-ratio: 3 / 4; }
     </style>
 </head>
 <body>
@@ -155,6 +186,11 @@
                        :class="{'submenu-item-active': currentSubTab === 'video'}" 
                        class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors sidebar-transition">
                         影片名片插件
+                    </a>
+                    <a href="#" @click="switchSubTab('messages', 'ecommerce')" 
+                       :class="{'submenu-item-active': currentSubTab === 'ecommerce'}" 
+                       class="flex items-center pl-16 py-2.5 text-sm hover:text-white transition-colors sidebar-transition">
+                        電商型插件
                     </a>
                 </div>
             </div>
@@ -211,7 +247,8 @@
         <div class="flex-grow overflow-hidden flex">
             <!-- 編輯與預覽區 -->
             <div v-if="currentTab === 'messages'" class="flex w-full overflow-hidden">
-                <div class="flex-grow overflow-y-auto p-8 bg-white shadow-inner border-r no-scrollbar">
+                <!-- 單頁文章和影片名片的編輯器 -->
+                <div v-if="flexData.type !== 'ecommerce'" class="flex-grow overflow-y-auto p-8 bg-white shadow-inner border-r no-scrollbar">
                     <div class="max-w-4xl mx-auto">
                         <div class="flex items-center justify-between mb-8">
                             <div>
@@ -230,21 +267,6 @@
                                 </button>
                                 <button @click="saveToCloudflare" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
                                     {{ isSaving ? '同步中...' : '儲存到雲端' }}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div v-if="currentProjectId" class="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-box text-purple-500"></i>
-                                    <div>
-                                        <div class="font-bold text-gray-800">{{ currentProjectName }}</div>
-                                        <div class="text-xs text-gray-500">專案ID: {{ currentProjectId }}</div>
-                                    </div>
-                                </div>
-                                <button @click="clearCurrentProject" class="text-sm text-gray-500 hover:text-red-500">
-                                    <i class="fas fa-times"></i> 清除選擇
                                 </button>
                             </div>
                         </div>
@@ -330,8 +352,340 @@
                     </div>
                 </div>
 
-                <!-- 右側：手機預覽區 -->
-                <div class="w-[360px] flex-shrink-0 bg-gray-50 flex items-center justify-center py-8 shadow-inner overflow-y-auto no-scrollbar">
+                <!-- 電子商務版編輯器 -->
+                <div v-if="flexData.type === 'ecommerce'" class="flex w-full overflow-hidden">
+                    <!-- 左側編輯器 -->
+                    <div class="w-[450px] bg-white border-r overflow-y-auto p-5 space-y-6 custom-scrollbar flex-shrink-0">
+                        <!-- Hero 設定 -->
+                        <div class="border-2 border-line-green rounded-xl bg-white overflow-hidden shadow-sm">
+                            <div class="p-3 bg-line-green border-b border-line-green flex items-center gap-2 font-bold text-white text-sm">
+                                <i data-lucide="image" class="w-4 h-4 text-white"></i> 頂部 Hero 視覺
+                            </div>
+                            <div class="p-4 space-y-4">
+                                <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-300">
+                                    <button @click="updateHeroType('image')" :class="ecomState.hero.type === 'image' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">靜態圖片</button>
+                                    <button @click="updateHeroType('video')" :class="ecomState.hero.type === 'video' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">影片播放</button>
+                                    <button @click="updateHeroType('none')" :class="ecomState.hero.type === 'none' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">無</button>
+                                </div>
+
+                                <div v-show="ecomState.hero.type !== 'none'" class="space-y-4">
+                                    <div>
+                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">顯示比例</label>
+                                        <select v-model="ecomState.hero.aspectRatio" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-2 focus:ring-line-green outline-none">
+                                            <option value="16:9">16:9 (寬螢幕)</option>
+                                            <option value="1:1">1:1 (正方形)</option>
+                                            <option value="4:3">4:3 (矩形)</option>
+                                            <option value="1.91:1">1.91:1 (橫幅)</option>
+                                            <option value="3:4">3:4 (直式)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-1">
+                                            <span class="text-[11px] font-bold text-slate-700 uppercase block">{{ ecomState.hero.type === 'video' ? '預覽封面圖 URL (Preview)' : '圖片網址 (Image URL)' }}</span>
+                                            <span class="text-[10px] text-slate-400 font-normal">※ 請輸入公開連結</span>
+                                        </label>
+                                        <input type="text" v-model="ecomState.hero.url" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
+                                    </div>
+                                    
+                                    <div v-if="ecomState.hero.type === 'video'">
+                                        <label class="block mb-1">
+                                            <span class="text-[11px] font-bold text-slate-700 uppercase block">影片網址 (Video URL)</span>
+                                            <span class="text-[10px] text-slate-400 font-normal">※ 請輸入 .mp4 結尾的影片連結</span>
+                                        </label>
+                                        <input type="text" v-model="ecomState.hero.videoUrl" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-1">
+                                            <span class="text-[11px] font-bold text-slate-700 uppercase block">點擊連結 (Action URL)</span>
+                                            <span class="text-[10px] text-slate-400 font-normal">※ 點擊圖片或影片後跳轉的網址</span>
+                                        </label>
+                                        <input type="text" v-model="ecomState.hero.link" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
+                                    </div>
+                                </div>
+
+                                <div v-show="ecomState.hero.type === 'none'" class="text-center py-4 text-xs text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                                    已隱藏 Hero 區塊
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Body 設定 -->
+                        <div class="border-2 border-line-green rounded-xl bg-white overflow-hidden shadow-sm">
+                            <div class="p-3 bg-line-green border-b border-line-green flex items-center justify-between font-bold text-white text-sm">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="palette" class="w-4 h-4 text-white"></i> Body 內容與尺寸
+                                </div>
+                                <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded text-white font-mono">{{ ecomState.body.items.length }} items</span>
+                            </div>
+                            <div class="p-4 space-y-4">
+                                <!-- 尺寸與欄位 -->
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">卡片尺寸 (Size)</label>
+                                        <select v-model="ecomState.body.bubbleSize" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
+                                            <option value="mega">MEGA (標準)</option>
+                                            <option value="giga">GIGA (寬版)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">每行欄數</label>
+                                        <select v-model="ecomState.body.columns" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
+                                            <option value="3">3 欄位</option>
+                                            <option value="4">4 欄位</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- 標籤顏色設定 -->
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">標籤背景色</label>
+                                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                            <input type="color" v-model="ecomState.body.tagBgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                            <input type="text" v-model="ecomState.body.tagBgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">標籤文字色</label>
+                                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                            <input type="color" v-model="ecomState.body.tagTextColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                            <input type="text" v-model="ecomState.body.tagTextColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 背景類型切換 -->
+                                <div>
+                                    <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景類型</label>
+                                    <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-300">
+                                        <button @click="updateBodyType('color')" :class="ecomState.body.bgType === 'color' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">純色背景</button>
+                                        <button @click="updateBodyType('image')" :class="ecomState.body.bgType === 'image' ? 'flex-1 py-1.5 text-xs font-bold rounded-md transition bg-white shadow-sm text-line-green border border-line-green' : 'flex-1 py-1.5 text-xs font-bold rounded-md transition text-slate-600 hover:bg-slate-200'">圖片背景</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 背景詳細設定 -->
+                                <div class="space-y-4">
+                                    <div v-if="ecomState.body.bgType === 'color'">
+                                        <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景底色</label>
+                                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                            <input type="color" v-model="ecomState.body.bgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                            <input type="text" v-model="ecomState.body.bgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                        </div>
+                                    </div>
+
+                                    <div v-if="ecomState.body.bgType === 'image'" class="space-y-4">
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">圖片模式</label>
+                                                <select v-model="ecomState.body.bgMode" @change="saveEcomHistory" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-1 focus:ring-line-green outline-none">
+                                                    <option value="cover">全版拉伸 (Cover)</option>
+                                                    <option value="top">等比縮放 (Fit Width)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">背景底色 (補白用)</label>
+                                                <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                                    <input type="color" v-model="ecomState.body.bgColor" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                                    <input type="text" v-model="ecomState.body.bgColor" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block mb-1">
+                                                <span class="text-[11px] font-bold text-slate-700 uppercase block">背景圖片網址</span>
+                                                <span class="text-[10px] text-slate-400 font-normal">※ 滿版背景圖 (Absolute Background)</span>
+                                            </label>
+                                            <input type="text" v-model="ecomState.body.bg" @input="saveEcomHistory" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <div v-for="(item, index) in ecomState.body.items" :key="index" class="p-3 bg-slate-50 border border-slate-300 rounded-xl space-y-2 relative group shadow-sm">
+                                        <button @click="deleteEcomItem(index)" class="absolute top-2 right-2 text-slate-400 hover:text-red-600 transition">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                        <div class="flex items-center gap-3">
+                                            <img :src="item.img" class="w-10 h-10 rounded-md object-cover border border-slate-300 bg-white">
+                                            <div class="flex-1 grid grid-cols-1 gap-2 mr-6">
+                                                <label class="text-[10px] text-slate-500 font-bold block mb-0.5">標籤文字</label>
+                                                <input type="text" :value="item.title" @input="updateEcomItem(index, 'title', $event.target.value)" class="text-xs p-1.5 bg-white border border-slate-300 rounded font-bold text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="標籤文字">
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <div class="flex-1">
+                                                <label class="text-[10px] text-slate-500 font-bold block mb-0.5">圖片連結 (Image URL)</label>
+                                                <input type="text" :value="item.img" @input="updateEcomItem(index, 'img', $event.target.value)" class="w-full text-[10px] p-1.5 bg-white border border-slate-300 rounded font-mono text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="圖片 URL">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-slate-500 font-bold block mb-0.5">點擊連結 (Action URL)</label>
+                                            <input type="text" :value="item.url" @input="updateEcomItem(index, 'url', $event.target.value)" class="w-full text-[10px] p-1.5 bg-white border border-slate-300 rounded font-mono text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button @click="addEcomItem" class="w-full py-2.5 border-2 border-dashed border-slate-400 rounded-xl text-slate-600 text-xs font-bold hover:border-line-green hover:text-line-green hover:bg-emerald-50 transition flex items-center justify-center gap-2">
+                                    <i data-lucide="plus" class="w-4 h-4"></i> 新增商品
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Footer 設定 -->
+                        <div class="border-2 border-line-green rounded-xl bg-white overflow-hidden shadow-sm">
+                            <div class="p-3 bg-line-green border-b border-line-green flex items-center gap-2 font-bold text-white text-sm">
+                                <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-white"></i> 底部按鈕
+                            </div>
+                            <div class="p-4 space-y-4">
+                                
+                                <!-- Footer 背景色 -->
+                                <div>
+                                    <label class="text-[11px] font-bold text-slate-600 uppercase mb-1 block">底部背景顏色</label>
+                                    <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-300 h-[42px]">
+                                        <input type="color" v-model="ecomState.footer.bg" @change="saveEcomHistory" class="w-7 h-7 rounded cursor-pointer border-none p-0 flex-shrink-0">
+                                        <input type="text" v-model="ecomState.footer.bg" @input="saveEcomHistory" class="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none uppercase">
+                                    </div>
+                                </div>
+
+                                <!-- Footer 說明文字開關 -->
+                                <div class="flex items-center justify-between">
+                                    <label class="text-[11px] font-bold text-slate-600 uppercase">啟用說明文字</label>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" v-model="ecomState.footer.textEnabled" @change="saveEcomHistory" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-line-green"></div>
+                                    </label>
+                                </div>
+
+                                <div v-show="ecomState.footer.textEnabled" class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <label class="block text-[11px] font-bold text-slate-600 uppercase">說明內容</label>
+                                        <div class="flex gap-2">
+                                            <!-- Text Color Picker -->
+                                            <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-1 py-0.5" title="文字顏色">
+                                                <input type="color" v-model="ecomState.footer.textColor" @change="saveEcomHistory" class="w-4 h-4 rounded cursor-pointer border-none p-0">
+                                                <input type="text" v-model="ecomState.footer.textColor" @input="saveEcomHistory" class="w-12 text-[10px] font-mono text-slate-600 outline-none uppercase">
+                                            </div>
+                                            <!-- Alignment -->
+                                            <div class="flex bg-slate-200 rounded p-0.5 space-x-0.5">
+                                                <button @click="updateFooterTextAlign('start')" :class="ecomState.footer.textAlign === 'start' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠左"><i data-lucide="align-left" class="w-3 h-3"></i></button>
+                                                <button @click="updateFooterTextAlign('center')" :class="ecomState.footer.textAlign === 'center' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="置中"><i data-lucide="align-center" class="w-3 h-3"></i></button>
+                                                <button @click="updateFooterTextAlign('end')" :class="ecomState.footer.textAlign === 'end' ? 'p-1 rounded bg-white shadow-sm text-line-green border border-slate-200 transition' : 'p-1 rounded hover:bg-white transition text-slate-600'" title="靠右"><i data-lucide="align-right" class="w-3 h-3"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <textarea v-model="ecomState.footer.text" @input="saveEcomHistory" rows="3" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="請輸入說明文字..."></textarea>
+                                </div>
+
+                                <div class="p-3 bg-slate-50 border border-slate-300 rounded-xl">
+                                    <div class="text-[11px] font-bold text-slate-700 mb-2">按鈕 1 (Primary)</div>
+                                    <div class="flex gap-2 mb-2">
+                                        <input type="text" v-model="ecomState.footer.btn1.label" @input="saveEcomHistory" class="flex-1 text-xs p-2 border border-slate-300 rounded bg-white focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="名稱">
+                                        <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-28">
+                                            <input type="color" v-model="ecomState.footer.btn1.color" @change="saveEcomHistory" class="w-5 h-5 rounded cursor-pointer border-none shadow-sm">
+                                            <input type="text" v-model="ecomState.footer.btn1.color" @input="saveEcomHistory" class="flex-1 text-[10px] font-mono text-slate-600 outline-none uppercase text-center">
+                                        </div>
+                                    </div>
+                                    <input type="text" v-model="ecomState.footer.btn1.uri" @input="saveEcomHistory" class="w-full text-xs p-2 border border-slate-300 rounded font-mono bg-white text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
+                                </div>
+                                <div class="p-3 bg-slate-50 border border-slate-300 rounded-xl">
+                                    <div class="text-[11px] font-bold text-slate-700 mb-2">按鈕 2 (Primary)</div>
+                                    <div class="flex gap-2 mb-2">
+                                        <input type="text" v-model="ecomState.footer.btn2.label" @input="saveEcomHistory" class="flex-1 text-xs p-2 border border-slate-300 rounded bg-white focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="名稱">
+                                        <div class="flex items-center gap-1 border border-slate-300 rounded bg-white px-2 py-1 w-28">
+                                            <input type="color" v-model="ecomState.footer.btn2.color" @change="saveEcomHistory" class="w-5 h-5 rounded cursor-pointer border-none shadow-sm">
+                                            <input type="text" v-model="ecomState.footer.btn2.color" @input="saveEcomHistory" class="flex-1 text-[10px] font-mono text-slate-600 outline-none uppercase text-center">
+                                        </div>
+                                    </div>
+                                    <input type="text" v-model="ecomState.footer.btn2.uri" @input="saveEcomHistory" class="w-full text-xs p-2 border border-slate-300 rounded font-mono bg-white text-slate-600 focus:border-line-green focus:ring-1 focus:ring-line-green outline-none" placeholder="https://...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右側預覽區 -->
+                    <div class="flex-1 bg-slate-100 relative overflow-hidden flex flex-col">
+                        <div class="chat-room-bg custom-scrollbar">
+                            <!-- 模擬日期標籤 -->
+                            <div class="text-center my-4">
+                                <span class="bg-black/20 text-white text-[10px] px-2 py-1 rounded-full backdrop-blur-sm">Today</span>
+                            </div>
+
+                            <!-- Flex 氣泡本體 -->
+                            <div class="flex items-start gap-2 mb-8 w-full justify-center">
+                                <!-- 頭像 -->
+                                <div class="w-8 h-8 rounded-full bg-slate-400 shrink-0 self-start mt-1"></div>
+                                
+                                <!-- 氣泡內容 -->
+                                <div class="bg-white rounded-xl overflow-hidden flex-bubble-container flex flex-col">
+                                    
+                                    <!-- Hero Area -->
+                                    <div v-show="ecomState.hero.type !== 'none'" :class="getAspectClass(ecomState.hero.aspectRatio)" class="relative w-full bg-black overflow-hidden group cursor-pointer shrink-0">
+                                        <img v-show="ecomState.hero.type === 'image'" :src="ecomState.hero.url" class="w-full h-full object-cover">
+                                        <div v-show="ecomState.hero.type === 'video'" class="absolute inset-0 flex items-center justify-center">
+                                            <img :src="ecomState.hero.url" class="absolute inset-0 w-full h-full object-cover opacity-70">
+                                            <div class="relative z-10 w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                                                <i data-lucide="play" class="w-5 h-5 text-slate-900 fill-slate-900 ml-1"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Body Area -->
+                                    <div class="relative w-full" :style="{ backgroundColor: ecomState.body.bgColor }">
+                                        <!-- 背景圖 -->
+                                        <img v-if="ecomState.body.bgType === 'image' && ecomState.body.bg" :src="ecomState.body.bg" 
+                                             :class="ecomState.body.bgMode === 'top' ? 'object-contain' : 'object-cover'"
+                                             class="absolute inset-0 w-full h-full z-0">
+                                        
+                                        <!-- 內容網格 -->
+                                        <div class="relative z-10 p-4">
+                                            <div :class="ecomState.body.columns === 3 ? 'grid-cols-3' : 'grid-cols-4'" class="grid gap-2">
+                                                <div v-for="(item, index) in ecomState.body.items" :key="index" class="bg-white rounded-md p-1 shadow-sm flex flex-col">
+                                                    <div class="relative w-full aspect-square bg-slate-100 rounded-sm overflow-hidden mb-1">
+                                                        <img :src="item.img" class="w-full h-full object-cover">
+                                                    </div>
+                                                    <div :style="{ backgroundColor: ecomState.body.tagBgColor, color: ecomState.body.tagTextColor }" class="text-[8px] font-bold text-center py-1 px-1 rounded-sm truncate">
+                                                        {{ item.title }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Footer Area -->
+                                    <div class="p-3 border-t border-slate-100 flex flex-col gap-2 shrink-0 relative z-10" :style="{ backgroundColor: ecomState.footer.bg }">
+                                        <div v-show="ecomState.footer.textEnabled" :style="{ color: ecomState.footer.textColor }" 
+                                             :class="getTextAlignClass(ecomState.footer.textAlign)"
+                                             class="text-xs whitespace-pre-wrap mb-2 w-full">
+                                            {{ ecomState.footer.text }}
+                                        </div>
+                                        <div class="flex gap-2 w-full">
+                                            <button :style="{ backgroundColor: ecomState.footer.btn1.color }" 
+                                                    class="flex-1 py-2 rounded text-[10px] font-bold text-white text-center transition hover:opacity-90">
+                                                {{ ecomState.footer.btn1.label }}
+                                            </button>
+                                            <button :style="{ backgroundColor: ecomState.footer.btn2.color }" 
+                                                    class="flex-1 py-2 rounded text-[10px] font-bold text-white text-center transition hover:opacity-90">
+                                                {{ ecomState.footer.btn2.label }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 底部留白 -->
+                            <div class="h-10 w-full shrink-0"></div>
+                        </div>
+
+                        <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl text-sm font-medium transform translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-2 z-50">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> JSON 已複製
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 手機預覽區（單頁文章和影片名片） -->
+                <div v-if="flexData.type !== 'ecommerce'" class="w-[360px] flex-shrink-0 bg-gray-50 flex items-center justify-center py-8 shadow-inner overflow-y-auto no-scrollbar">
                     <div class="flex flex-col items-center gap-4">
                         <div class="preview-window no-scrollbar shadow-2xl">
                             <div class="p-3 border-b border-gray-800 bg-[#1A1B1E] flex items-center gap-2 sticky top-0 z-50">
@@ -400,8 +754,11 @@
                             <div class="p-5">
                                 <div class="flex items-center justify-between mb-2">
                                     <h4 class="font-bold text-gray-800">{{ template.name }}</h4>
-                                    <span class="px-2 py-1 text-xs rounded-full" :class="template.type === 'video' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'">
-                                        {{ template.type === 'video' ? '影片型' : '文章型' }}
+                                    <span class="px-2 py-1 text-xs rounded-full" 
+                                          :class="template.type === 'video' ? 'bg-purple-100 text-purple-700' : 
+                                                 template.type === 'ecommerce' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'">
+                                        {{ template.type === 'video' ? '影片型' : 
+                                           template.type === 'ecommerce' ? '電商型' : '文章型' }}
                                     </span>
                                 </div>
                                 <p class="text-sm text-gray-500 mb-4">點擊立即套用模板</p>
@@ -462,8 +819,10 @@
                                     <div>
                                         <div class="flex items-center gap-2 mb-1">
                                             <span class="px-2 py-1 text-xs rounded-full" 
-                                                  :class="project.type === 'video' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'">
-                                                {{ project.type === 'video' ? '影片型' : '文章型' }}
+                                                  :class="project.type === 'video' ? 'bg-purple-100 text-purple-700' : 
+                                                         project.type === 'ecommerce' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'">
+                                                {{ project.type === 'video' ? '影片型' : 
+                                                   project.type === 'ecommerce' ? '電商型' : '文章型' }}
                                             </span>
                                             <span class="text-xs text-gray-500">{{ formatDate(project.created_at) }}</span>
                                         </div>
@@ -543,6 +902,11 @@
                                 class="flex-1 py-2 border rounded-lg text-sm font-medium">
                             影片型
                         </button>
+                        <button @click="newProject.type = 'ecommerce'" 
+                                :class="newProject.type === 'ecommerce' ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-gray-100 text-gray-700'"
+                                class="flex-1 py-2 border rounded-lg text-sm font-medium">
+                            電商型
+                        </button>
                     </div>
                 </div>
             </div>
@@ -585,10 +949,10 @@
 </div>
 
 <script>
-const { createApp, ref, computed, onMounted } = Vue;
+const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
-// Cloudflare Worker URL - 替換為您的 Worker URL
-const WORKER_URL = "https://lineoa.fangwl591021.workers.dev"; // 您的 Cloudflare Worker URL
+// Cloudflare Worker URL
+const WORKER_URL = "https://lineoa.fangwl591021.workers.dev";
 
 createApp({
   setup() {
@@ -636,11 +1000,280 @@ createApp({
         }
       }
       
+      // 初始化圖標
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+      
       // 檢查並初始化 Google Sheets
       await checkSheetsStatus();
     });
 
-    // 初始化數據
+    // 電子商務版數據
+    const ecomState = ref({
+      hero: {
+        type: 'video', 
+        aspectRatio: '16:9',
+        url: "https://lihi.cc/5OXMZ", 
+        videoUrl: "https://lihi.cc/YsmAp", 
+        link: "https://line.me"
+      },
+      body: {
+        columns: 3,
+        bubbleSize: "mega", 
+        bgType: "image", // color | image
+        bgMode: "cover", // cover | top
+        bgColor: "#F8F8F8", // Body 預設底色
+        bg: "https://lihi.cc/l5qqU",
+        tagBgColor: "#0D0D0D",
+        tagTextColor: "#FFFFFF",
+        items: [
+          { title: "商品 A", img: "https://lihi.cc/mwMvo", url: "https://line.me" },
+          { title: "商品 B", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+          { title: "商品 C", img: "https://lihi.cc/yRfpn", url: "https://line.me" },
+          { title: "商品 D", img: "https://lihi.cc/yRfpn", url: "https://line.me" },
+          { title: "商品 E", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+          { title: "商品 F", img: "https://lihi.cc/mwMvo", url: "https://line.me" }
+        ]
+      },
+      footer: {
+        bg: "#ffffff", 
+        textEnabled: false,
+        text: "※ 請注意：優惠商品數量有限，售完為止。",
+        textColor: "#666666",
+        textAlign: "center", // start, center, end
+        btn1: { label: "品牌故事", color: "#000000", uri: "https://liff.line.me/2008704329-cTkwlRHm" },
+        btn2: { label: "好友分享", color: "#000000", uri: "line://nv/recommendOA/@754tjssx" }
+      }
+    });
+
+    const ecomHistory = ref([]);
+
+    // 電子商務版方法
+    const saveEcomHistory = () => {
+      if (ecomHistory.value.length > 20) ecomHistory.value.shift();
+      ecomHistory.value.push(JSON.parse(JSON.stringify(ecomState.value)));
+    };
+
+    const updateHeroType = (type) => {
+      saveEcomHistory();
+      ecomState.value.hero.type = type;
+    };
+
+    const updateBodyType = (type) => {
+      saveEcomHistory();
+      ecomState.value.body.bgType = type;
+    };
+
+    const updateFooterTextAlign = (align) => {
+      saveEcomHistory();
+      ecomState.value.footer.textAlign = align;
+    };
+
+    const updateEcomItem = (index, field, value) => {
+      saveEcomHistory();
+      ecomState.value.body.items[index][field] = value;
+    };
+
+    const addEcomItem = () => {
+      saveEcomHistory();
+      ecomState.value.body.items.push({ 
+        title: "新商品", 
+        img: "https://lihi.cc/mwMvo", 
+        url: "https://line.me" 
+      });
+    };
+
+    const deleteEcomItem = (index) => {
+      saveEcomHistory();
+      ecomState.value.body.items.splice(index, 1);
+    };
+
+    const getAspectClass = (aspect) => {
+      const ratioMap = { 
+        '1:1': 'aspect-1-1', 
+        '16:9': 'aspect-16-9', 
+        '4:3': 'aspect-4-3', 
+        '1.91:1': 'aspect-1_91-1', 
+        '3:4': 'aspect-3-4' 
+      };
+      return ratioMap[aspect] || 'aspect-16-9';
+    };
+
+    const getTextAlignClass = (align) => {
+      const alignMap = { 
+        'start': 'text-left', 
+        'center': 'text-center', 
+        'end': 'text-right' 
+      };
+      return alignMap[align] || 'text-center';
+    };
+
+    // 生成電子商務版 JSON
+    const generateEcommerceJson = () => {
+      const cols = ecomState.value.body.columns;
+      const width = cols === 3 ? "32%" : "23%";
+      const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
+      
+      // 基礎 Body 設定
+      const bodyConfig = {
+        "type": "box",
+        "layout": "vertical",
+        "backgroundColor": ecomState.value.body.bgColor,
+        "paddingAll": "none",
+        "contents": []
+      };
+
+      // 構建內部結構
+      const productContent = {
+        "type": "box",
+        "layout": "vertical",
+        "contents": chunk(ecomState.value.body.items, cols).map((row, idx) => ({
+          "type": "box",
+          "layout": "horizontal",
+          "margin": idx === 0 ? "none" : "md",
+          "contents": row.map((item, colIdx) => ({
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "image",
+                "url": item.img,
+                "aspectRatio": "1:1",
+                "size": "full",
+                "aspectMode": "cover"
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": item.title,
+                    "size": "xxs",
+                    "color": ecomState.value.body.tagTextColor,
+                    "align": "center",
+                    "weight": "bold",
+                    "wrap": true
+                  }
+                ],
+                "backgroundColor": ecomState.value.body.tagBgColor,
+                "cornerRadius": "sm",
+                "paddingAll": "xs",
+                "margin": "sm"
+              }
+            ],
+            "paddingAll": "xs",
+            "backgroundColor": "#FFFFFF",
+            "cornerRadius": "md",
+            "width": width,
+            "action": { "type": "uri", "uri": item.url },
+            "margin": colIdx === 0 ? "none" : "md" 
+          }))
+        })),
+        "paddingAll": "md"
+      };
+
+      if (ecomState.value.body.bgType === 'image') {
+        const bgImageProps = ecomState.value.body.bgMode === 'top' 
+          ? { "width": "100%", "aspectMode": "width", "align": "start", "offsetTop": "0px" } 
+          : { "size": "full", "aspectMode": "cover" };
+
+        bodyConfig.contents.push({
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "image",
+              "url": ecomState.value.body.bg,
+              "position": "absolute",
+              ...bgImageProps
+            },
+            productContent
+          ]
+        });
+      } else {
+        bodyConfig.contents.push(productContent);
+      }
+
+      const footerContents = [];
+      
+      if (ecomState.value.footer.textEnabled) {
+        footerContents.push({
+          "type": "text",
+          "text": ecomState.value.footer.text,
+          "wrap": true,
+          "size": "xs",
+          "color": ecomState.value.footer.textColor,
+          "align": ecomState.value.footer.textAlign,
+          "margin": "md"
+        });
+      }
+
+      footerContents.push({
+        "type": "box",
+        "layout": "horizontal",
+        "spacing": "md",
+        "contents": [
+          {
+            "type": "button",
+            "style": "primary",
+            "height": "sm",
+            "action": { "type": "uri", "label": ecomState.value.footer.btn1.label, "uri": ecomState.value.footer.btn1.uri },
+            "color": ecomState.value.footer.btn1.color
+          },
+          {
+            "type": "button",
+            "style": "primary",
+            "height": "sm",
+            "action": { "type": "uri", "label": ecomState.value.footer.btn2.label, "uri": ecomState.value.footer.btn2.uri },
+            "color": ecomState.value.footer.btn2.color
+          }
+        ]
+      });
+
+      const flex = {
+        "type": "bubble",
+        "size": ecomState.value.body.bubbleSize,
+        "body": bodyConfig,
+        "footer": {
+          "type": "box",
+          "layout": "vertical",
+          "spacing": "sm",
+          "backgroundColor": ecomState.value.footer.bg,
+          "contents": footerContents,
+          "paddingTop": "md"
+        }
+      };
+
+      if (ecomState.value.hero.type !== 'none') {
+        flex.hero = ecomState.value.hero.type === 'video' ? {
+          "type": "video",
+          "url": ecomState.value.hero.videoUrl,
+          "previewUrl": ecomState.value.hero.url,
+          "altContent": {
+            "type": "image",
+            "size": "full",
+            "aspectRatio": ecomState.value.hero.aspectRatio,
+            "aspectMode": "cover",
+            "url": ecomState.value.hero.url,
+            "backgroundColor": "#000000"
+          },
+          "aspectRatio": ecomState.value.hero.aspectRatio
+        } : {
+          "type": "image",
+          "url": ecomState.value.hero.url,
+          "size": "full",
+          "aspectRatio": ecomState.value.hero.aspectRatio,
+          "aspectMode": "cover",
+          "action": { "type": "uri", "uri": ecomState.value.hero.link }
+        };
+      }
+
+      return flex;
+    };
+
+    // 原有數據
     const flexData = ref({
       type: 'standard', 
       imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
@@ -709,6 +1342,50 @@ createApp({
             {label:'📤 分享好友',uri:'https://liff.line.me/2006625044-J42EzjkZ/index.php/linecard_12/6816/'}
           ]
         } 
+      },
+      { 
+        name: '電商型模板', 
+        type: 'ecommerce', 
+        thumbnail: 'https://lihi.cc/l5qqU', 
+        payload: {
+          type: 'ecommerce',
+          ecomState: {
+            hero: {
+              type: 'video', 
+              aspectRatio: '16:9',
+              url: "https://lihi.cc/5OXMZ", 
+              videoUrl: "https://lihi.cc/YsmAp", 
+              link: "https://line.me"
+            },
+            body: {
+              columns: 3,
+              bubbleSize: "mega", 
+              bgType: "image",
+              bgMode: "cover",
+              bgColor: "#F8F8F8",
+              bg: "https://lihi.cc/l5qqU",
+              tagBgColor: "#0D0D0D",
+              tagTextColor: "#FFFFFF",
+              items: [
+                { title: "商品 A", img: "https://lihi.cc/mwMvo", url: "https://line.me" },
+                { title: "商品 B", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+                { title: "商品 C", img: "https://lihi.cc/yRfpn", url: "https://line.me" },
+                { title: "商品 D", img: "https://lihi.cc/yRfpn", url: "https://line.me" },
+                { title: "商品 E", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+                { title: "商品 F", img: "https://lihi.cc/mwMvo", url: "https://line.me" }
+              ]
+            },
+            footer: {
+              bg: "#ffffff", 
+              textEnabled: false,
+              text: "※ 請注意：優惠商品數量有限，售完為止。",
+              textColor: "#666666",
+              textAlign: "center",
+              btn1: { label: "品牌故事", color: "#000000", uri: "https://liff.line.me/2008704329-cTkwlRHm" },
+              btn2: { label: "好友分享", color: "#000000", uri: "line://nv/recommendOA/@754tjssx" }
+            }
+          }
+        }
       }
     ]);
 
@@ -734,6 +1411,10 @@ createApp({
     });
 
     const generatedJson = computed(() => {
+      if (flexData.value.type === 'ecommerce') {
+        return generateEcommerceJson();
+      }
+      
       if (flexData.value.type === 'standard') {
         const contents = [
           { 
@@ -1087,13 +1768,23 @@ createApp({
     const switchSubTab = (t, s) => { 
       currentTab.value = t; 
       currentSubTab.value = s; 
-      flexData.value.type = (s === 'video' ? 'video' : 'standard'); 
+      flexData.value.type = (s === 'video' ? 'video' : s === 'ecommerce' ? 'ecommerce' : 'standard'); 
+      
+      // 初始化電子商務歷史記錄
+      if (s === 'ecommerce') {
+        ecomHistory.value = [];
+        saveEcomHistory();
+      }
     };
     
     const applyTemplate = (tpl) => { 
-      flexData.value = JSON.parse(JSON.stringify(tpl.payload)); 
+      if (tpl.type === 'ecommerce') {
+        ecomState.value = JSON.parse(JSON.stringify(tpl.payload.ecomState));
+      } else {
+        flexData.value = JSON.parse(JSON.stringify(tpl.payload)); 
+      }
       currentTab.value = 'messages'; 
-      currentSubTab.value = (tpl.type === 'video' ? 'video' : 'single'); 
+      currentSubTab.value = (tpl.type === 'video' ? 'video' : tpl.type === 'ecommerce' ? 'ecommerce' : 'single'); 
     };
     
     const addButton = () => { 
@@ -1123,7 +1814,7 @@ createApp({
       else liff.login();
     };
 
-    // 直接推播（使用 LIFF shareTargetPicker）
+    // 直接推播
     const shareToLine = () => {
       if (!liff.isLoggedIn()) { 
         alert("請先登入 LINE。"); 
@@ -1154,8 +1845,8 @@ createApp({
         const payload = {
           userId: liffProfile.value.userId,
           type: flexData.value.type,
-          name: flexData.value.title || flexData.value.headerName || '未命名專案',
-          params: flexData.value,
+          name: flexData.value.type === 'ecommerce' ? '電商型專案' : (flexData.value.title || flexData.value.headerName || '未命名專案'),
+          params: flexData.value.type === 'ecommerce' ? ecomState.value : flexData.value,
           flexPayload: generatedJson.value
         };
 
@@ -1190,7 +1881,7 @@ createApp({
         
         if (data.success) {
           projects.value = data.projects
-            .filter(project => project.name && project.name.trim() !== '') // 過濾空專案
+            .filter(project => project.name && project.name.trim() !== '')
             .map(project => ({
               ...project,
               name: project.name || `專案 ${project.id}`,
@@ -1223,7 +1914,7 @@ createApp({
           name: isUpdate ? currentProjectName.value : newProject.value.name,
           description: newProject.value.description,
           type: flexData.value.type,
-          data: JSON.stringify(flexData.value),
+          data: flexData.value.type === 'ecommerce' ? JSON.stringify(ecomState.value) : JSON.stringify(flexData.value),
           flex_json: JSON.stringify(generatedJson.value)
         };
 
@@ -1276,12 +1967,17 @@ createApp({
           const projectData = typeof project.data === 'string' ? 
             JSON.parse(project.data) : project.data;
           
-          flexData.value = projectData;
+          if (project.type === 'ecommerce') {
+            ecomState.value = projectData;
+          } else {
+            flexData.value = projectData;
+          }
+          
           currentProjectId.value = project.id;
           currentProjectName.value = project.name;
           
           currentTab.value = 'messages';
-          currentSubTab.value = project.type === 'video' ? 'video' : 'single';
+          currentSubTab.value = project.type === 'video' ? 'video' : project.type === 'ecommerce' ? 'ecommerce' : 'single';
           
           alert(`已載入專案: ${project.name}`);
         }
@@ -1331,16 +2027,52 @@ createApp({
     const clearCurrentProject = () => {
       currentProjectId.value = null;
       currentProjectName.value = '';
-      flexData.value = {
-        type: 'standard', 
-        imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
-        aspectRatio: '20:13', 
-        title: '', 
-        subtitle: '', 
-        showBadge: true, 
-        badgeColor: '#FF0000',
-        buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }]
-      };
+      if (flexData.value.type === 'ecommerce') {
+        ecomState.value = {
+          hero: {
+            type: 'video', 
+            aspectRatio: '16:9',
+            url: "https://lihi.cc/5OXMZ", 
+            videoUrl: "https://lihi.cc/YsmAp", 
+            link: "https://line.me"
+          },
+          body: {
+            columns: 3,
+            bubbleSize: "mega", 
+            bgType: "image",
+            bgMode: "cover",
+            bgColor: "#F8F8F8",
+            bg: "https://lihi.cc/l5qqU",
+            tagBgColor: "#0D0D0D",
+            tagTextColor: "#FFFFFF",
+            items: [
+              { title: "商品 A", img: "https://lihi.cc/mwMvo", url: "https://line.me" },
+              { title: "商品 B", img: "https://lihi.cc/2Nu8G", url: "https://line.me" },
+              { title: "商品 C", img: "https://lihi.cc/yRfpn", url: "https://line.me" }
+            ]
+          },
+          footer: {
+            bg: "#ffffff", 
+            textEnabled: false,
+            text: "※ 請注意：優惠商品數量有限，售完為止。",
+            textColor: "#666666",
+            textAlign: "center",
+            btn1: { label: "品牌故事", color: "#000000", uri: "https://liff.line.me/2008704329-cTkwlRHm" },
+            btn2: { label: "好友分享", color: "#000000", uri: "line://nv/recommendOA/@754tjssx" }
+          }
+        };
+      } else {
+        flexData.value = {
+          type: 'standard', 
+          imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
+          aspectRatio: '20:13', 
+          title: '', 
+          subtitle: '', 
+          showBadge: true, 
+          badgeColor: '#FF0000',
+          buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }]
+        };
+      }
     };
     
     // 推播專案
@@ -1399,7 +2131,8 @@ createApp({
       currentTab, 
       currentSubTab, 
       flexData, 
-      templates, 
+      ecomState,
+      templates,
       projects,
       projectSearch,
       loadingProjects,
@@ -1433,7 +2166,17 @@ createApp({
       checkSheetsStatus,
       initializeSheets,
       formatDate,
-      liffLogin
+      liffLogin,
+      // 電子商務版方法
+      updateHeroType,
+      updateBodyType,
+      updateFooterTextAlign,
+      updateEcomItem,
+      addEcomItem,
+      deleteEcomItem,
+      getAspectClass,
+      getTextAlignClass,
+      saveEcomHistory
     };
   }
 }).mount('#app');
