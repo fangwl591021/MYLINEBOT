@@ -15,32 +15,27 @@
         .line-green { color: #00B900; }
         .bg-line-green { background-color: #00B900; }
         
-        /* 側邊欄核心收合 - 最終強制樣式 */
         .sidebar-container { 
             background-color: #1e2124; 
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             height: 100vh; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; z-index: 50;
         }
-        /* 強制固定寬度 */
         .w-expanded { width: 256px !important; min-width: 256px !important; max-width: 256px !important; }
         .w-collapsed { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }
 
         .sidebar-item-active { background-color: #374151; color: white; border-left: 4px solid #00B900; }
         .submenu-item-active { color: #00B900; font-weight: bold; }
         
-        /* 手機預覽模擬器 */
         .preview-window { 
             width: 300px; height: 560px; background: #0F0F10; border: 10px solid #333; border-radius: 32px; overflow-y: auto; position: relative; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
         }
         .preview-window::-webkit-scrollbar { width: 0px; }
         
-        /* Flex Message 預覽 */
         .flex-bubble { background: #FFFFFF; border-radius: 12px; overflow: hidden; width: 250px; margin: 0 auto; border: 1px solid #333; }
         .flex-bubble-dark { background: #1F2024; color: white; }
         .flex-badge { position: absolute; top: 10px; right: 10px; color: white; padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; z-index: 20; }
         .preview-article { white-space: pre-wrap; word-break: break-all; padding-left: 5px; }
 
-        /* 影片插件元件 */
         .header-box { background: #1A1B1E; padding: 10px; display: flex; align-items: center; gap: 10px; }
         .video-hero { position: relative; background: #000; width: 100%; aspect-ratio: 800/500; display: flex; align-items: center; justify-content: center; }
         .grid-box { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; background: #0F0F10; }
@@ -56,10 +51,8 @@
         .ratio-btn { @apply px-3 py-1 text-xs border border-gray-200 rounded-md transition-all cursor-pointer hover:bg-gray-50 bg-white; }
         .ratio-btn-active { @apply border-line-green bg-green-50 text-line-green font-bold; }
         
-        /* 側邊欄收合時的動畫效果 */
         .sidebar-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        /* 專案卡片 */
         .project-card { 
             background: white; 
             border-radius: 16px; 
@@ -74,7 +67,6 @@
             border-color: #00B900;
         }
         
-        /* 模態視窗 */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -97,7 +89,6 @@
             overflow-y: auto;
         }
         
-        /* 載入動畫 */
         .spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #00B900;
@@ -235,9 +226,9 @@
                                     <i class="fas fa-plus"></i> 儲存為新專案
                                 </button>
                                 <button @click="shareToLine" class="px-6 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2">
-                                    <i class="fas fa-paper-plane"></i> 🚀 推播分享
+                                    <i class="fas fa-paper-plane"></i> 🚀 直接推播
                                 </button>
-                                <button @click="saveToGAS" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
+                                <button @click="saveToCloudflare" :disabled="isSaving" class="px-6 py-2.5 bg-line-green text-white rounded-xl text-sm font-bold shadow-lg hover:opacity-90 disabled:bg-gray-300">
                                     {{ isSaving ? '同步中...' : '儲存到雲端' }}
                                 </button>
                             </div>
@@ -449,6 +440,9 @@
                                 <button @click="loadProjects" class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100">
                                     <i class="fas fa-sync-alt"></i> 重新整理
                                 </button>
+                                <button @click="initializeSheets" class="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100">
+                                    <i class="fas fa-database"></i> 初始化
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -487,7 +481,7 @@
                                             class="flex-1 py-2 bg-line-green text-white rounded-lg text-sm font-bold hover:opacity-90">
                                         <i class="fas fa-edit"></i> 編輯
                                     </button>
-                                    <button @click="shareProject(project)" 
+                                    <button @click="pushProject(project)" 
                                             class="flex-1 py-2 bg-blue-500 text-white rounded-lg text-sm font-bold hover:opacity-90">
                                         <i class="fas fa-paper-plane"></i> 推播
                                     </button>
@@ -591,811 +585,858 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+const { createApp, ref, computed, onMounted } = Vue;
 
-    // --- 設定區 ---
-    const GAS_API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_ID/exec"; // 替換為您的 GAS 部署網址
-    const DEFAULT_SPREADSHEET_ID = "1qQjIMf8WDAuklmqz_sqfQoDysttMETJqcy69mdkqXyM";
-    const LINE_CHANNEL_ACCESS_TOKEN = "YOUR_LINE_CHANNEL_ACCESS_TOKEN"; // 替換為您的 LINE Channel Access Token
+// Cloudflare Worker URL - 替換為您的 Worker URL
+const WORKER_URL = "https://lineoa.fangwl591021.workers.dev"; // 您的 Cloudflare Worker URL
 
-    createApp({
-        setup() {
-            // 狀態變數
-            const isSidebarCollapsed = ref(false);
-            const isMessageMenuOpen = ref(true);
-            const currentTab = ref('messages');
-            const currentSubTab = ref('single');
-            const isSaving = ref(false);
-            const isLoggedIn = ref(false);
-            const isInIframe = ref(false);
-            const liffProfile = ref(null);
-            
-            // 專案相關狀態
-            const showNewProjectModal = ref(false);
-            const showDeleteConfirm = ref(false);
-            const projectSearch = ref('');
-            const projects = ref([]);
-            const loadingProjects = ref(false);
-            const currentProjectId = ref(null);
-            const currentProjectName = ref('');
-            const projectToDelete = ref(null);
-            
-            // 新專案資料
-            const newProject = ref({
-                name: '',
-                description: '',
-                type: 'standard'
-            });
+createApp({
+  setup() {
+    // 狀態變數
+    const isSidebarCollapsed = ref(false);
+    const isMessageMenuOpen = ref(true);
+    const currentTab = ref('messages');
+    const currentSubTab = ref('single');
+    const isSaving = ref(false);
+    const isLoggedIn = ref(false);
+    const isInIframe = ref(false);
+    const liffProfile = ref(null);
+    
+    // 專案相關狀態
+    const showNewProjectModal = ref(false);
+    const showDeleteConfirm = ref(false);
+    const projectSearch = ref('');
+    const projects = ref([]);
+    const loadingProjects = ref(false);
+    const currentProjectId = ref(null);
+    const currentProjectName = ref('');
+    const projectToDelete = ref(null);
+    
+    // 新專案資料
+    const newProject = ref({
+      name: '',
+      description: '',
+      type: 'standard'
+    });
 
-            onMounted(async () => {
-                isInIframe.value = window.self !== window.top;
-                if (typeof liff !== 'undefined') {
-                    try {
-                        await liff.init({ liffId: "2008541971-XPIDtaaj" });
-                        console.log("LIFF Ready");
-                        isLoggedIn.value = liff.isLoggedIn();
-                        
-                        if (isLoggedIn.value) {
-                            liffProfile.value = await liff.getProfile();
-                        }
-                    } catch (err) {
-                        console.error("LIFF Init failed", err);
-                    }
-                }
-                // 載入專案列表
-                loadProjects();
-            });
-
-            // 初始化數據
-            const flexData = ref({
-                type: 'standard', 
-                imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
-                aspectRatio: '20:13', 
-                title: 'Brown Cafe', 
-                subtitle: '歡迎光臨！支援長文換行。', 
-                showBadge: true, 
-                badgeColor: '#FF0000',
-                buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }],
-                
-                // 影片模板數據
-                headerImg: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png',
-                headerName: 'TONY', 
-                headerTitle: 'LINE行銷達人',
-                headerDescription: '系統開發',
-                videoUrl: 'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4',
-                previewUrl: 'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200',
-                gridButtons: [
-                    { emoji: '🤖', label: 'AI 諮詢', uri: 'https://liff.line.me/2006625044-bPGxrB53/' },
-                    { emoji: '🎥', label: '產品介紹', uri: 'https://example.com/video' },
-                    { emoji: '🧾', label: '商品型錄', uri: 'https://example.com/catalog' },
-                    { emoji: '📍', label: '門市資訊', uri: 'https://example.com/map' }
-                ],
-                videoFooterButtons: [
-                    { label: '🚀 啟動 AI 小幫手', uri: 'https://liff.line.me/2006625044-bPGxrB53/index.php/colt_sp/6502/', color: '#C9A24D' },
-                    { label: '📤 分享好友', uri: 'https://liff.line.me/2006625044-J42EzjkZ/index.php/linecard_12/6816/' }
-                ]
-            });
-
-            const templates = ref([
-                { 
-                    name: '文章型模板', 
-                    type: 'standard', 
-                    thumbnail: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', 
-                    payload: { 
-                        type:'standard', 
-                        imageUrl:'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', 
-                        aspectRatio:'20:13', 
-                        title:'經典咖啡', 
-                        subtitle:'支援換行。', 
-                        showBadge:true, 
-                        badgeColor:'#FF0000', 
-                        buttons:[{label:'了解更多', uri:'#', color:'#00B900'}]
-                    } 
-                },
-                { 
-                    name: '影片名片模板', 
-                    type: 'video', 
-                    thumbnail: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', 
-                    payload: { 
-                        type:'video', 
-                        headerName:'TONY', 
-                        headerTitle: 'LINE行銷達人',
-                        headerDescription: '系統開發',
-                        headerImg:'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', 
-                        videoUrl:'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4',
-                        previewUrl:'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200',
-                        gridButtons: [
-                            {emoji:'🤖',label:'AI 諮詢',uri:'https://liff.line.me/2006625044-bPGxrB53/'},
-                            {emoji:'🎥',label:'產品介紹',uri:'https://example.com/video'},
-                            {emoji:'🧾',label:'商品型錄',uri:'https://example.com/catalog'},
-                            {emoji:'📍',label:'門市資訊',uri:'https://example.com/map'}
-                        ], 
-                        videoFooterButtons:[
-                            {label:'🚀 啟動 AI 小幫手',uri:'https://liff.line.me/2006625044-bPGxrB53/index.php/colt_sp/6502/',color:'#C9A24D'},
-                            {label:'📤 分享好友',uri:'https://liff.line.me/2006625044-J42EzjkZ/index.php/linecard_12/6816/'}
-                        ]
-                    } 
-                }
-            ]);
-
-            // 計算屬性
-            const pageTitle = computed(() => {
-                const titles = {
-                    'dashboard': '儀表板總覽',
-                    'messages': '插件開發管理平台',
-                    'templates': '插件模板選擇中心',
-                    'projects': '專案管理'
-                };
-                return titles[currentTab.value] || 'LINEOA 插件管理平台';
-            });
-            
-            const filteredProjects = computed(() => {
-                if (!projectSearch.value) return projects.value;
-                const search = projectSearch.value.toLowerCase();
-                return projects.value.filter(project => 
-                    project.name.toLowerCase().includes(search) ||
-                    project.type.toLowerCase().includes(search) ||
-                    (project.description && project.description.toLowerCase().includes(search))
-                );
-            });
-
-            const generatedJson = computed(() => {
-                if (flexData.value.type === 'standard') {
-                    const contents = [
-                        { 
-                            type: "image", 
-                            url: flexData.value.imageUrl, 
-                            size: "full", 
-                            aspectRatio: flexData.value.aspectRatio, 
-                            animated: true 
-                        }, 
-                        { 
-                            type: "text", 
-                            text: flexData.value.title, 
-                            weight: "bold", 
-                            size: "xl", 
-                            align: "center", 
-                            margin: "sm" 
-                        }, 
-                        { 
-                            type: "text", 
-                            text: flexData.value.subtitle, 
-                            size: "sm", 
-                            margin: "sm", 
-                            offsetStart: "5px", 
-                            wrap: true 
-                        }
-                    ];
-                    
-                    return { 
-                        type: "bubble", 
-                        body: { 
-                            type: "box", 
-                            layout: "vertical", 
-                            paddingAll: "0px", 
-                            contents: contents 
-                        }, 
-                        footer: { 
-                            type: "box", 
-                            layout: "vertical", 
-                            spacing: "sm", 
-                            contents: flexData.value.buttons.map(b => ({ 
-                                type: "button", 
-                                style: "primary", 
-                                color: b.color, 
-                                height: "sm", 
-                                action: { 
-                                    type: "uri", 
-                                    label: b.label, 
-                                    uri: b.uri 
-                                } 
-                            })) 
-                        } 
-                    };
-                } else {
-                    return { 
-                        type: "bubble",
-                        size: "mega",
-                        header: {
-                            type: "box",
-                            layout: "horizontal",
-                            spacing: "md",
-                            paddingAll: "8px",
-                            backgroundColor: "#1A1B1E",
-                            contents: [
-                                {
-                                    type: "image",
-                                    url: flexData.value.headerImg,
-                                    size: "xs",
-                                    aspectRatio: "1:1",
-                                    aspectMode: "cover",
-                                    gravity: "center"
-                                },
-                                {
-                                    type: "box",
-                                    layout: "vertical",
-                                    spacing: "xs",
-                                    flex: 3,
-                                    contents: [
-                                        {
-                                            type: "text",
-                                            text: flexData.value.headerName || "TONY",
-                                            weight: "bold",
-                                            size: "lg",
-                                            color: "#D4AF37"
-                                        },
-                                        {
-                                            type: "text",
-                                            text: flexData.value.headerTitle || "LINE行銷達人",
-                                            size: "sm",
-                                            color: "#E6E6E6"
-                                        },
-                                        {
-                                            type: "text",
-                                            text: flexData.value.headerDescription || "系統開發",
-                                            size: "xs",
-                                            color: "#A0A0A0",
-                                            wrap: true
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        hero: {
-                            type: "video",
-                            url: flexData.value.videoUrl,
-                            previewUrl: flexData.value.previewUrl,
-                            aspectRatio: "800:500",
-                            altContent: {
-                                type: "image",
-                                url: flexData.value.previewUrl,
-                                size: "full",
-                                aspectRatio: "800:500",
-                                aspectMode: "cover"
-                            }
-                        },
-                        body: {
-                            type: "box",
-                            layout: "vertical",
-                            paddingAll: "8px",
-                            contents: [
-                                {
-                                    type: "box",
-                                    layout: "vertical",
-                                    spacing: "sm",
-                                    paddingAll: "12px",
-                                    backgroundColor: "#1F2024",
-                                    cornerRadius: "14px",
-                                    contents: [
-                                        {
-                                            type: "box",
-                                            layout: "horizontal",
-                                            spacing: "sm",
-                                            contents: [
-                                                {
-                                                    type: "box",
-                                                    layout: "vertical",
-                                                    paddingAll: "12px",
-                                                    backgroundColor: "#2A2C31",
-                                                    cornerRadius: "12px",
-                                                    action: {
-                                                        type: "uri",
-                                                        label: flexData.value.gridButtons[0]?.label || "AI 諮詢",
-                                                        uri: flexData.value.gridButtons[0]?.uri || "#"
-                                                    },
-                                                    contents: [
-                                                        {
-                                                            type: "text",
-                                                            text: flexData.value.gridButtons[0]?.emoji || "🤖",
-                                                            size: "xl",
-                                                            align: "center"
-                                                        },
-                                                        {
-                                                            type: "text",
-                                                            text: flexData.value.gridButtons[0]?.label || "AI 諮詢",
-                                                            size: "sm",
-                                                            align: "center",
-                                                            color: "#E6E6E6"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    type: "box",
-                                                    layout: "vertical",
-                                                    paddingAll: "12px",
-                                                    backgroundColor: "#2A2C31",
-                                                    cornerRadius: "12px",
-                                                    action: {
-                                                        type: "uri",
-                                                        label: flexData.value.gridButtons[1]?.label || "產品介紹",
-                                                        uri: flexData.value.gridButtons[1]?.uri || "#"
-                                                    },
-                                                    contents: [
-                                                        {
-                                                            type: "text",
-                                                            text: flexData.value.gridButtons[1]?.emoji || "🎥",
-                                                            size: "xl",
-                                                            align: "center"
-                                                        },
-                                                        {
-                                                            type: "text",
-                                                            text: flexData.value.gridButtons[1]?.label || "產品介紹",
-                                                            size: "sm",
-                                                            align: "center",
-                                                            color: "#E6E6E6"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            type: "box",
-                                            layout: "horizontal",
-                                            spacing: "sm",
-                                            contents: [
-                                                {
-                                                    type: "box",
-                                                    layout: "vertical",
-                                                    paddingAll: "12px",
-                                                    backgroundColor: "#2A2C31",
-                                                    cornerRadius: "12px",
-                                                    action: {
-                                                        type: "uri",
-                                                        label: flexData.value.gridButtons[2]?.label || "商品型錄",
-                                                        uri: flexData.value.gridButtons[2]?.uri || "#"
-                                                    },
-                                                    contents: [
-                                                        {
-                                                            type: "text",
-                                                            text: flexData.value.gridButtons[2]?.emoji || "🧾",
-                                                            size: "xl",
-                                                            align: "center"
-                                                        },
-                                                        {
-                                                            type: "text",
-                                                            text: flexData.value.gridButtons[2]?.label || "商品型錄",
-                                                            size: "sm",
-                                                            align: "center",
-                                                            color: "#E6E6E6"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    type: "box",
-                                                    layout: "vertical",
-                                                    paddingAll: "12px",
-                                                    backgroundColor: "#2A2C31",
-                                                    cornerRadius: "12px",
-                                                    action: {
-                                                        type: "uri",
-                                                        label: flexData.value.gridButtons[3]?.label || "門市資訊",
-                                                        uri: flexData.value.gridButtons[3]?.uri || "#"
-                                                    },
-                                                    contents: [
-                                                        {
-                                                            type: "text",
-                                                            text: flexData.value.gridButtons[3]?.emoji || "📍",
-                                                            size: "xl",
-                                                            align: "center"
-                                                        },
-                                                        {
-                                                            type: "text",
-                                                            text: flexData.value.gridButtons[3]?.label || "門市資訊",
-                                                            size: "sm",
-                                                            align: "center",
-                                                            color: "#E6E6E6"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        footer: {
-                            type: "box",
-                            layout: "vertical",
-                            spacing: "sm",
-                            paddingAll: "8px",
-                            contents: [
-                                {
-                                    type: "button",
-                                    style: "primary",
-                                    color: flexData.value.videoFooterButtons[0]?.color || "#C9A24D",
-                                    height: "sm",
-                                    action: {
-                                        type: "uri",
-                                        label: flexData.value.videoFooterButtons[0]?.label || "🚀 啟動 AI 小幫手",
-                                        uri: flexData.value.videoFooterButtons[0]?.uri || "#"
-                                    }
-                                },
-                                {
-                                    type: "button",
-                                    style: "secondary",
-                                    height: "sm",
-                                    action: {
-                                        type: "uri",
-                                        label: flexData.value.videoFooterButtons[1]?.label || "📤 分享好友",
-                                        uri: flexData.value.videoFooterButtons[1]?.uri || "#"
-                                    }
-                                }
-                            ]
-                        },
-                        styles: {
-                            body: {
-                                backgroundColor: "#0F0F10"
-                            },
-                            footer: {
-                                backgroundColor: "#0F0F10"
-                            }
-                        }
-                    };
-                }
-            });
-
-            // 方法
-            const switchTab = (t) => {
-                currentTab.value = t;
-                if (t === 'projects') {
-                    loadProjects();
-                }
-            };
-            
-            const toggleSidebarMenu = () => { 
-                if (isSidebarCollapsed.value) {
-                    isSidebarCollapsed.value = false;
-                    setTimeout(() => {
-                        isMessageMenuOpen.value = true;
-                    }, 100);
-                } else {
-                    isMessageMenuOpen.value = !isMessageMenuOpen.value;
-                }
-            };
-            
-            const switchSubTab = (t, s) => { 
-                currentTab.value = t; 
-                currentSubTab.value = s; 
-                flexData.value.type = (s === 'video' ? 'video' : 'standard'); 
-            };
-            
-            const applyTemplate = (tpl) => { 
-                flexData.value = JSON.parse(JSON.stringify(tpl.payload)); 
-                currentTab.value = 'messages'; 
-                currentSubTab.value = (tpl.type === 'video' ? 'video' : 'single'); 
-            };
-            
-            const addButton = () => { 
-                if (flexData.value.buttons.length < 3) {
-                    flexData.value.buttons.push({ 
-                        label: '新按鈕', 
-                        uri: 'https://example.com', 
-                        color: '#00B900' 
-                    }); 
-                }
-            };
-            
-            const removeButton = (idx) => flexData.value.buttons.splice(idx, 1);
-            
-            const copyJson = () => { 
-                const el = document.createElement('textarea'); 
-                el.value = JSON.stringify(generatedJson.value, null, 2); 
-                document.body.appendChild(el); 
-                el.select(); 
-                document.execCommand('copy'); 
-                document.body.removeChild(el); 
-                alert('JSON 已複製！'); 
-            };
-
-            const liffLogin = () => {
-                if (isInIframe.value) window.open("https://liff.line.me/2008541971-XPIDtaaj", "_blank");
-                else liff.login();
-            };
-
-            // 直接推播（使用 LIFF shareTargetPicker）
-            const shareToLine = () => {
-                if (!liff.isLoggedIn()) { 
-                    alert("請先登入 LINE。"); 
-                    liffLogin(); 
-                    return; 
-                }
-                liff.shareTargetPicker([{ 
-                    type: "flex", 
-                    altText: "分享客製化插件訊息", 
-                    contents: generatedJson.value 
-                }])
-                .then(res => { 
-                    if (res) alert("發送成功！"); 
-                })
-                .catch(err => alert("發送失敗：" + err));
-            };
-
-            // 儲存到 GAS（包含推播功能）
-            const saveToGAS = async () => {
-                if (!liffProfile.value) {
-                    alert("請先登入 LINE");
-                    liffLogin();
-                    return;
-                }
-
-                isSaving.value = true;
-                try {
-                    const payload = {
-                        action: 'savePlugin',
-                        spreadsheetId: DEFAULT_SPREADSHEET_ID,
-                        accessToken: LINE_CHANNEL_ACCESS_TOKEN,
-                        userId: liffProfile.value.userId,
-                        type: flexData.value.type,
-                        name: flexData.value.title || flexData.value.headerName || '未命名專案',
-                        params: flexData.value,
-                        flexPayload: {
-                            type: 'flex',
-                            altText: 'LINEOA 插件訊息',
-                            contents: generatedJson.value
-                        }
-                    };
-
-                    const response = await fetch(GAS_API_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    alert('數據已儲存到 Google Sheets！');
-                    
-                } catch (error) {
-                    console.error('儲存失敗:', error);
-                    alert('儲存失敗，請檢查控制台');
-                } finally {
-                    isSaving.value = false;
-                }
-            };
-
-            // 載入專案列表
-            const loadProjects = async () => {
-                loadingProjects.value = true;
-                try {
-                    const response = await fetch(`${GAS_API_URL}?action=getProjects&spreadsheetId=${DEFAULT_SPREADSHEET_ID}`);
-                    const data = await response.json();
-                    if (data.success) {
-                        projects.value = data.projects;
-                    } else {
-                        console.error('載入專案失敗:', data.message);
-                        projects.value = [];
-                    }
-                } catch (error) {
-                    console.error('載入專案時發生錯誤:', error);
-                    projects.value = [];
-                } finally {
-                    loadingProjects.value = false;
-                }
-            };
-
-            // 儲存專案
-            const saveProject = async (isUpdate = false) => {
-                if (!newProject.value.name && !isUpdate) {
-                    alert('請輸入專案名稱');
-                    return;
-                }
-
-                isSaving.value = true;
-                try {
-                    const payload = {
-                        action: isUpdate ? 'updateProject' : 'createProject',
-                        spreadsheetId: DEFAULT_SPREADSHEET_ID,
-                        name: isUpdate ? currentProjectName.value : newProject.value.name,
-                        description: newProject.value.description,
-                        type: flexData.value.type,
-                        data: JSON.stringify(flexData.value),
-                        flex_json: JSON.stringify(generatedJson.value)
-                    };
-
-                    if (isUpdate) {
-                        payload.id = currentProjectId.value;
-                    }
-
-                    const response = await fetch(GAS_API_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    alert(isUpdate ? '專案更新成功！' : '專案儲存成功！');
-                    
-                    if (!isUpdate) {
-                        currentProjectId.value = Date.now().toString(); // 臨時 ID
-                        currentProjectName.value = newProject.value.name;
-                        showNewProjectModal.value = false;
-                        newProject.value = {
-                            name: '',
-                            description: '',
-                            type: 'standard'
-                        };
-                    }
-                    
-                    loadProjects();
-                    switchTab('projects');
-                } catch (error) {
-                    console.error('儲存專案時發生錯誤:', error);
-                    alert('儲存失敗，請稍後再試');
-                } finally {
-                    isSaving.value = false;
-                }
-            };
-
-            // 載入專案
-            const loadProject = (project) => {
-                try {
-                    if (project.data) {
-                        const projectData = typeof project.data === 'string' ? 
-                            JSON.parse(project.data) : project.data;
-                        
-                        flexData.value = projectData;
-                        currentProjectId.value = project.id;
-                        currentProjectName.value = project.name;
-                        
-                        currentTab.value = 'messages';
-                        currentSubTab.value = project.type === 'video' ? 'video' : 'single';
-                        
-                        alert(`已載入專案: ${project.name}`);
-                    }
-                } catch (error) {
-                    console.error('載入專案資料時發生錯誤:', error);
-                    alert('載入專案失敗');
-                }
-            };
-
-            // 刪除專案
-            const deleteProject = (projectId) => {
-                projectToDelete.value = projectId;
-                showDeleteConfirm.value = true;
-            };
-
-            const confirmDelete = async () => {
-                try {
-                    const payload = {
-                        action: 'deleteProject',
-                        spreadsheetId: DEFAULT_SPREADSHEET_ID,
-                        id: projectToDelete.value
-                    };
-
-                    await fetch(GAS_API_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    alert('專案刪除成功！');
-                    
-                    if (currentProjectId.value === projectToDelete.value) {
-                        clearCurrentProject();
-                    }
-                    
-                    loadProjects();
-                } catch (error) {
-                    console.error('刪除專案時發生錯誤:', error);
-                    alert('刪除失敗，請稍後再試');
-                } finally {
-                    showDeleteConfirm.value = false;
-                    projectToDelete.value = null;
-                }
-            };
-
-            // 清除當前專案
-            const clearCurrentProject = () => {
-                currentProjectId.value = null;
-                currentProjectName.value = '';
-                flexData.value = {
-                    type: 'standard', 
-                    imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
-                    aspectRatio: '20:13', 
-                    title: '', 
-                    subtitle: '', 
-                    showBadge: true, 
-                    badgeColor: '#FF0000',
-                    buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }]
-                };
-            };
-
-            // 推播專案
-            const shareProject = async (project) => {
-                if (!liffProfile.value) {
-                    alert("請先登入 LINE");
-                    liffLogin();
-                    return;
-                }
-
-                try {
-                    const payload = {
-                        action: 'pushProject',
-                        spreadsheetId: DEFAULT_SPREADSHEET_ID,
-                        accessToken: LINE_CHANNEL_ACCESS_TOKEN,
-                        id: project.id,
-                        userId: liffProfile.value.userId
-                    };
-
-                    const response = await fetch(GAS_API_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    alert('專案推播請求已發送！');
-                } catch (error) {
-                    console.error('推播專案時發生錯誤:', error);
-                    alert('推播失敗');
-                }
-            };
-
-            // 格式化日期
-            const formatDate = (dateString) => {
-                if (!dateString) return '無日期';
-                try {
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('zh-TW', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    });
-                } catch (e) {
-                    return '日期格式錯誤';
-                }
-            };
-
-            return { 
-                isSidebarCollapsed, 
-                isMessageMenuOpen, 
-                currentTab, 
-                currentSubTab, 
-                flexData, 
-                templates, 
-                projects,
-                projectSearch,
-                loadingProjects,
-                newProject,
-                currentProjectId,
-                currentProjectName,
-                showNewProjectModal,
-                showDeleteConfirm,
-                pageTitle, 
-                generatedJson, 
-                filteredProjects,
-                isSaving, 
-                isLoggedIn, 
-                isInIframe, 
-                liffLogin, 
-                switchTab, 
-                toggleSidebarMenu, 
-                switchSubTab, 
-                applyTemplate, 
-                addButton, 
-                removeButton, 
-                copyJson, 
-                saveToGAS, 
-                shareToLine,
-                loadProjects,
-                saveProject,
-                loadProject,
-                deleteProject,
-                confirmDelete,
-                clearCurrentProject,
-                shareProject,
-                formatDate
-            }
+    onMounted(async () => {
+      isInIframe.value = window.self !== window.top;
+      if (typeof liff !== 'undefined') {
+        try {
+          await liff.init({ liffId: "2008541971-XPIDtaaj" });
+          console.log("LIFF Ready");
+          isLoggedIn.value = liff.isLoggedIn();
+          
+          if (isLoggedIn.value) {
+            liffProfile.value = await liff.getProfile();
+            console.log("User Profile:", liffProfile.value);
+          }
+        } catch (err) {
+          console.error("LIFF Init failed", err);
         }
-    }).mount('#app');
+      }
+      
+      // 檢查並初始化 Google Sheets
+      await checkSheetsStatus();
+    });
+
+    // 初始化數據
+    const flexData = ref({
+      type: 'standard', 
+      imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
+      aspectRatio: '20:13', 
+      title: 'Brown Cafe', 
+      subtitle: '歡迎光臨！支援長文換行。', 
+      showBadge: true, 
+      badgeColor: '#FF0000',
+      buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }],
+      
+      // 影片模板數據
+      headerImg: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png',
+      headerName: 'TONY', 
+      headerTitle: 'LINE行銷達人',
+      headerDescription: '系統開發',
+      videoUrl: 'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4',
+      previewUrl: 'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200',
+      gridButtons: [
+        { emoji: '🤖', label: 'AI 諮詢', uri: 'https://liff.line.me/2006625044-bPGxrB53/' },
+        { emoji: '🎥', label: '產品介紹', uri: 'https://example.com/video' },
+        { emoji: '🧾', label: '商品型錄', uri: 'https://example.com/catalog' },
+        { emoji: '📍', label: '門市資訊', uri: 'https://example.com/map' }
+      ],
+      videoFooterButtons: [
+        { label: '🚀 啟動 AI 小幫手', uri: 'https://liff.line.me/2006625044-bPGxrB53/index.php/colt_sp/6502/', color: '#C9A24D' },
+        { label: '📤 分享好友', uri: 'https://liff.line.me/2006625044-J42EzjkZ/index.php/linecard_12/6816/' }
+      ]
+    });
+
+    const templates = ref([
+      { 
+        name: '文章型模板', 
+        type: 'standard', 
+        thumbnail: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', 
+        payload: { 
+          type:'standard', 
+          imageUrl:'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', 
+          aspectRatio:'20:13', 
+          title:'經典咖啡', 
+          subtitle:'支援換行。', 
+          showBadge:true, 
+          badgeColor:'#FF0000', 
+          buttons:[{label:'了解更多', uri:'#', color:'#00B900'}]
+        } 
+      },
+      { 
+        name: '影片名片模板', 
+        type: 'video', 
+        thumbnail: 'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', 
+        payload: { 
+          type:'video', 
+          headerName:'TONY', 
+          headerTitle: 'LINE行銷達人',
+          headerDescription: '系統開發',
+          headerImg:'https://aiwe.cc/wp-content/uploads/2025/04/f9ebd0672d3b0ac370272909a493d4db.png', 
+          videoUrl:'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/mp4',
+          previewUrl:'https://voom-obs.line-scdn.net/ho1sEMNWDLB8UUD8RLAYrZjJoJzAxV3cPGT8MeBQ_J2YzD3JIGgELJDl3bm4xeSUUJy9_IhBjCiYfajYJIBEMORdaCXUceRQXDigUOQpZHg/m800x1200',
+          gridButtons: [
+            {emoji:'🤖',label:'AI 諮詢',uri:'https://liff.line.me/2006625044-bPGxrB53/'},
+            {emoji:'🎥',label:'產品介紹',uri:'https://example.com/video'},
+            {emoji:'🧾',label:'商品型錄',uri:'https://example.com/catalog'},
+            {emoji:'📍',label:'門市資訊',uri:'https://example.com/map'}
+          ], 
+          videoFooterButtons:[
+            {label:'🚀 啟動 AI 小幫手',uri:'https://liff.line.me/2006625044-bPGxrB53/index.php/colt_sp/6502/',color:'#C9A24D'},
+            {label:'📤 分享好友',uri:'https://liff.line.me/2006625044-J42EzjkZ/index.php/linecard_12/6816/'}
+          ]
+        } 
+      }
+    ]);
+
+    // 計算屬性
+    const pageTitle = computed(() => {
+      const titles = {
+        'dashboard': '儀表板總覽',
+        'messages': '插件開發管理平台',
+        'templates': '插件模板選擇中心',
+        'projects': '專案管理'
+      };
+      return titles[currentTab.value] || 'LINEOA 插件管理平台';
+    });
+    
+    const filteredProjects = computed(() => {
+      if (!projectSearch.value) return projects.value;
+      const search = projectSearch.value.toLowerCase();
+      return projects.value.filter(project => 
+        (project.name && project.name.toLowerCase().includes(search)) ||
+        (project.type && project.type.toLowerCase().includes(search)) ||
+        (project.description && project.description.toLowerCase().includes(search))
+      );
+    });
+
+    const generatedJson = computed(() => {
+      if (flexData.value.type === 'standard') {
+        const contents = [
+          { 
+            type: "image", 
+            url: flexData.value.imageUrl, 
+            size: "full", 
+            aspectRatio: flexData.value.aspectRatio, 
+            animated: true 
+          }, 
+          { 
+            type: "text", 
+            text: flexData.value.title, 
+            weight: "bold", 
+            size: "xl", 
+            align: "center", 
+            margin: "sm" 
+          }, 
+          { 
+            type: "text", 
+            text: flexData.value.subtitle, 
+            size: "sm", 
+            margin: "sm", 
+            offsetStart: "5px", 
+            wrap: true 
+          }
+        ];
+        
+        return { 
+          type: "bubble", 
+          body: { 
+            type: "box", 
+            layout: "vertical", 
+            paddingAll: "0px", 
+            contents: contents 
+          }, 
+          footer: { 
+            type: "box", 
+            layout: "vertical", 
+            spacing: "sm", 
+            contents: flexData.value.buttons.map(b => ({ 
+              type: "button", 
+              style: "primary", 
+              color: b.color, 
+              height: "sm", 
+              action: { 
+                type: "uri", 
+                label: b.label, 
+                uri: b.uri 
+              } 
+            })) 
+          } 
+        };
+      } else {
+        return { 
+          type: "bubble",
+          size: "mega",
+          header: {
+            type: "box",
+            layout: "horizontal",
+            spacing: "md",
+            paddingAll: "8px",
+            backgroundColor: "#1A1B1E",
+            contents: [
+              {
+                type: "image",
+                url: flexData.value.headerImg,
+                size: "xs",
+                aspectRatio: "1:1",
+                aspectMode: "cover",
+                gravity: "center"
+              },
+              {
+                type: "box",
+                layout: "vertical",
+                spacing: "xs",
+                flex: 3,
+                contents: [
+                  {
+                    type: "text",
+                    text: flexData.value.headerName || "TONY",
+                    weight: "bold",
+                    size: "lg",
+                    color: "#D4AF37"
+                  },
+                  {
+                    type: "text",
+                    text: flexData.value.headerTitle || "LINE行銷達人",
+                    size: "sm",
+                    color: "#E6E6E6"
+                  },
+                  {
+                    type: "text",
+                    text: flexData.value.headerDescription || "系統開發",
+                    size: "xs",
+                    color: "#A0A0A0",
+                    wrap: true
+                  }
+                ]
+              }
+            ]
+          },
+          hero: {
+            type: "video",
+            url: flexData.value.videoUrl,
+            previewUrl: flexData.value.previewUrl,
+            aspectRatio: "800:500",
+            altContent: {
+              type: "image",
+              url: flexData.value.previewUrl,
+              size: "full",
+              aspectRatio: "800:500",
+              aspectMode: "cover"
+            }
+          },
+          body: {
+            type: "box",
+            layout: "vertical",
+            paddingAll: "8px",
+            contents: [
+              {
+                type: "box",
+                layout: "vertical",
+                spacing: "sm",
+                paddingAll: "12px",
+                backgroundColor: "#1F2024",
+                cornerRadius: "14px",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "sm",
+                    contents: [
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        paddingAll: "12px",
+                        backgroundColor: "#2A2C31",
+                        cornerRadius: "12px",
+                        action: {
+                          type: "uri",
+                          label: flexData.value.gridButtons[0]?.label || "AI 諮詢",
+                          uri: flexData.value.gridButtons[0]?.uri || "#"
+                        },
+                        contents: [
+                          {
+                            type: "text",
+                            text: flexData.value.gridButtons[0]?.emoji || "🤖",
+                            size: "xl",
+                            align: "center"
+                          },
+                          {
+                            type: "text",
+                            text: flexData.value.gridButtons[0]?.label || "AI 諮詢",
+                            size: "sm",
+                            align: "center",
+                            color: "#E6E6E6"
+                          }
+                        ]
+                      },
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        paddingAll: "12px",
+                        backgroundColor: "#2A2C31",
+                        cornerRadius: "12px",
+                        action: {
+                          type: "uri",
+                          label: flexData.value.gridButtons[1]?.label || "產品介紹",
+                          uri: flexData.value.gridButtons[1]?.uri || "#"
+                        },
+                        contents: [
+                          {
+                            type: "text",
+                            text: flexData.value.gridButtons[1]?.emoji || "🎥",
+                            size: "xl",
+                            align: "center"
+                          },
+                          {
+                            type: "text",
+                            text: flexData.value.gridButtons[1]?.label || "產品介紹",
+                            size: "sm",
+                            align: "center",
+                            color: "#E6E6E6"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "sm",
+                    contents: [
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        paddingAll: "12px",
+                        backgroundColor: "#2A2C31",
+                        cornerRadius: "12px",
+                        action: {
+                          type: "uri",
+                          label: flexData.value.gridButtons[2]?.label || "商品型錄",
+                          uri: flexData.value.gridButtons[2]?.uri || "#"
+                        },
+                        contents: [
+                          {
+                            type: "text",
+                            text: flexData.value.gridButtons[2]?.emoji || "🧾",
+                            size: "xl",
+                            align: "center"
+                          },
+                          {
+                            type: "text",
+                            text: flexData.value.gridButtons[2]?.label || "商品型錄",
+                            size: "sm",
+                            align: "center",
+                            color: "#E6E6E6"
+                          }
+                        ]
+                      },
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        paddingAll: "12px",
+                        backgroundColor: "#2A2C31",
+                        cornerRadius: "12px",
+                        action: {
+                          type: "uri",
+                          label: flexData.value.gridButtons[3]?.label || "門市資訊",
+                          uri: flexData.value.gridButtons[3]?.uri || "#"
+                        },
+                        contents: [
+                          {
+                            type: "text",
+                            text: flexData.value.gridButtons[3]?.emoji || "📍",
+                            size: "xl",
+                            align: "center"
+                          },
+                          {
+                            type: "text",
+                            text: flexData.value.gridButtons[3]?.label || "門市資訊",
+                            size: "sm",
+                            align: "center",
+                            color: "#E6E6E6"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          footer: {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            paddingAll: "8px",
+            contents: [
+              {
+                type: "button",
+                style: "primary",
+                color: flexData.value.videoFooterButtons[0]?.color || "#C9A24D",
+                height: "sm",
+                action: {
+                  type: "uri",
+                  label: flexData.value.videoFooterButtons[0]?.label || "🚀 啟動 AI 小幫手",
+                  uri: flexData.value.videoFooterButtons[0]?.uri || "#"
+                }
+              },
+              {
+                type: "button",
+                style: "secondary",
+                height: "sm",
+                action: {
+                  type: "uri",
+                  label: flexData.value.videoFooterButtons[1]?.label || "📤 分享好友",
+                  uri: flexData.value.videoFooterButtons[1]?.uri || "#"
+                }
+              }
+            ]
+          },
+          styles: {
+            body: {
+              backgroundColor: "#0F0F10"
+            },
+            footer: {
+              backgroundColor: "#0F0F10"
+            }
+          }
+        };
+      }
+    });
+
+    // 檢查工作表狀態
+    const checkSheetsStatus = async () => {
+      try {
+        const response = await fetch(`${WORKER_URL}/api/sheets/status`);
+        const data = await response.json();
+        
+        if (data.success) {
+          const missingSheets = Object.entries(data.sheets)
+            .filter(([_, exists]) => !exists)
+            .map(([name]) => name);
+          
+          if (missingSheets.length > 0) {
+            console.log('缺少工作表，正在初始化...', missingSheets);
+            await initializeSheets();
+          }
+        }
+      } catch (error) {
+        console.error('檢查工作表狀態失敗:', error);
+      }
+    };
+    
+    // 初始化工作表
+    const initializeSheets = async () => {
+      try {
+        const response = await fetch(`${WORKER_URL}/api/sheets/initialize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        console.log('工作表初始化結果:', data);
+        alert('Google Sheets 初始化完成！');
+      } catch (error) {
+        console.error('初始化工作表失敗:', error);
+        alert('初始化失敗，請檢查控制台');
+      }
+    };
+
+    // 方法
+    const switchTab = (t) => {
+      currentTab.value = t;
+      if (t === 'projects') {
+        loadProjects();
+      }
+    };
+    
+    const toggleSidebarMenu = () => { 
+      if (isSidebarCollapsed.value) {
+        isSidebarCollapsed.value = false;
+        setTimeout(() => {
+          isMessageMenuOpen.value = true;
+        }, 100);
+      } else {
+        isMessageMenuOpen.value = !isMessageMenuOpen.value;
+      }
+    };
+    
+    const switchSubTab = (t, s) => { 
+      currentTab.value = t; 
+      currentSubTab.value = s; 
+      flexData.value.type = (s === 'video' ? 'video' : 'standard'); 
+    };
+    
+    const applyTemplate = (tpl) => { 
+      flexData.value = JSON.parse(JSON.stringify(tpl.payload)); 
+      currentTab.value = 'messages'; 
+      currentSubTab.value = (tpl.type === 'video' ? 'video' : 'single'); 
+    };
+    
+    const addButton = () => { 
+      if (flexData.value.buttons.length < 3) {
+        flexData.value.buttons.push({ 
+          label: '新按鈕', 
+          uri: 'https://example.com', 
+          color: '#00B900' 
+        }); 
+      }
+    };
+    
+    const removeButton = (idx) => flexData.value.buttons.splice(idx, 1);
+    
+    const copyJson = () => { 
+      const el = document.createElement('textarea'); 
+      el.value = JSON.stringify(generatedJson.value, null, 2); 
+      document.body.appendChild(el); 
+      el.select(); 
+      document.execCommand('copy'); 
+      document.body.removeChild(el); 
+      alert('JSON 已複製！'); 
+    };
+
+    const liffLogin = () => {
+      if (isInIframe.value) window.open("https://liff.line.me/2008541971-XPIDtaaj", "_blank");
+      else liff.login();
+    };
+
+    // 直接推播（使用 LIFF shareTargetPicker）
+    const shareToLine = () => {
+      if (!liff.isLoggedIn()) { 
+        alert("請先登入 LINE。"); 
+        liffLogin(); 
+        return; 
+      }
+      liff.shareTargetPicker([{ 
+        type: "flex", 
+        altText: "分享客製化插件訊息", 
+        contents: generatedJson.value 
+      }])
+      .then(res => { 
+        if (res) alert("發送成功！"); 
+      })
+      .catch(err => alert("發送失敗：" + err));
+    };
+
+    // 儲存到 Cloudflare Worker
+    const saveToCloudflare = async () => {
+      if (!liffProfile.value) {
+        alert("請先登入 LINE");
+        liffLogin();
+        return;
+      }
+
+      isSaving.value = true;
+      try {
+        const payload = {
+          userId: liffProfile.value.userId,
+          type: flexData.value.type,
+          name: flexData.value.title || flexData.value.headerName || '未命名專案',
+          params: flexData.value,
+          flexPayload: generatedJson.value
+        };
+
+        const response = await fetch(`${WORKER_URL}/api/plugins/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('數據已成功儲存到 Google Sheets！');
+        } else {
+          alert('儲存失敗: ' + (data.error || '未知錯誤'));
+        }
+        
+      } catch (error) {
+        console.error('儲存失敗:', error);
+        alert('儲存失敗，請檢查控制台');
+      } finally {
+        isSaving.value = false;
+      }
+    };
+    
+    // 載入專案列表
+    const loadProjects = async () => {
+      loadingProjects.value = true;
+      try {
+        const response = await fetch(`${WORKER_URL}/api/projects`);
+        const data = await response.json();
+        
+        if (data.success) {
+          projects.value = data.projects
+            .filter(project => project.name && project.name.trim() !== '') // 過濾空專案
+            .map(project => ({
+              ...project,
+              name: project.name || `專案 ${project.id}`,
+              description: project.description || '',
+              type: project.type || 'standard',
+              created_at: project.created_at || new Date().toISOString()
+            }));
+        } else {
+          console.error('載入專案失敗:', data.error);
+          projects.value = [];
+        }
+      } catch (error) {
+        console.error('載入專案時發生錯誤:', error);
+        projects.value = [];
+      } finally {
+        loadingProjects.value = false;
+      }
+    };
+    
+    // 儲存專案
+    const saveProject = async (isUpdate = false) => {
+      if (!newProject.value.name && !isUpdate) {
+        alert('請輸入專案名稱');
+        return;
+      }
+
+      isSaving.value = true;
+      try {
+        const payload = {
+          name: isUpdate ? currentProjectName.value : newProject.value.name,
+          description: newProject.value.description,
+          type: flexData.value.type,
+          data: JSON.stringify(flexData.value),
+          flex_json: JSON.stringify(generatedJson.value)
+        };
+
+        if (isUpdate) {
+          payload.id = currentProjectId.value;
+        }
+
+        const endpoint = isUpdate ? '/api/projects/update' : '/api/projects/create';
+        const response = await fetch(`${WORKER_URL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert(isUpdate ? '專案更新成功！' : '專案儲存成功！');
+          
+          if (!isUpdate) {
+            currentProjectId.value = data.id;
+            currentProjectName.value = payload.name;
+            showNewProjectModal.value = false;
+            newProject.value = {
+              name: '',
+              description: '',
+              type: 'standard'
+            };
+          }
+          
+          loadProjects();
+          if (!isUpdate) {
+            switchTab('projects');
+          }
+        } else {
+          alert('儲存失敗: ' + (data.error || '未知錯誤'));
+        }
+      } catch (error) {
+        console.error('儲存專案時發生錯誤:', error);
+        alert('儲存失敗，請稍後再試');
+      } finally {
+        isSaving.value = false;
+      }
+    };
+    
+    // 載入專案
+    const loadProject = (project) => {
+      try {
+        if (project.data) {
+          const projectData = typeof project.data === 'string' ? 
+            JSON.parse(project.data) : project.data;
+          
+          flexData.value = projectData;
+          currentProjectId.value = project.id;
+          currentProjectName.value = project.name;
+          
+          currentTab.value = 'messages';
+          currentSubTab.value = project.type === 'video' ? 'video' : 'single';
+          
+          alert(`已載入專案: ${project.name}`);
+        }
+      } catch (error) {
+        console.error('載入專案資料時發生錯誤:', error);
+        alert('載入專案失敗');
+      }
+    };
+    
+    // 刪除專案
+    const deleteProject = (projectId) => {
+      projectToDelete.value = projectId;
+      showDeleteConfirm.value = true;
+    };
+
+    const confirmDelete = async () => {
+      try {
+        const response = await fetch(`${WORKER_URL}/api/projects/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: projectToDelete.value })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('專案刪除成功！');
+          
+          if (currentProjectId.value === projectToDelete.value) {
+            clearCurrentProject();
+          }
+          
+          loadProjects();
+        } else {
+          alert('刪除失敗: ' + (data.error || '未知錯誤'));
+        }
+      } catch (error) {
+        console.error('刪除專案時發生錯誤:', error);
+        alert('刪除失敗，請稍後再試');
+      } finally {
+        showDeleteConfirm.value = false;
+        projectToDelete.value = null;
+      }
+    };
+    
+    // 清除當前專案
+    const clearCurrentProject = () => {
+      currentProjectId.value = null;
+      currentProjectName.value = '';
+      flexData.value = {
+        type: 'standard', 
+        imageUrl: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png',
+        aspectRatio: '20:13', 
+        title: '', 
+        subtitle: '', 
+        showBadge: true, 
+        badgeColor: '#FF0000',
+        buttons: [{ label: '了解更多', uri: 'https://example.com', color: '#00B900' }]
+      };
+    };
+    
+    // 推播專案
+    const pushProject = async (project) => {
+      if (!liffProfile.value) {
+        alert("請先登入 LINE");
+        liffLogin();
+        return;
+      }
+
+      try {
+        const payload = {
+          projectId: project.id,
+          userId: liffProfile.value.userId
+        };
+
+        const response = await fetch(`${WORKER_URL}/api/plugins/push`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('專案推播成功！');
+        } else {
+          alert('推播失敗: ' + (data.error || '未知錯誤'));
+        }
+      } catch (error) {
+        console.error('推播專案時發生錯誤:', error);
+        alert('推播失敗');
+      }
+    };
+    
+    // 格式化日期
+    const formatDate = (dateString) => {
+      if (!dateString) return '無日期';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('zh-TW', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        return '日期格式錯誤';
+      }
+    };
+
+    return {
+      isSidebarCollapsed, 
+      isMessageMenuOpen, 
+      currentTab, 
+      currentSubTab, 
+      flexData, 
+      templates, 
+      projects,
+      projectSearch,
+      loadingProjects,
+      newProject,
+      currentProjectId,
+      currentProjectName,
+      showNewProjectModal,
+      showDeleteConfirm,
+      pageTitle, 
+      generatedJson, 
+      filteredProjects,
+      isSaving, 
+      isLoggedIn, 
+      isInIframe,
+      switchTab, 
+      toggleSidebarMenu, 
+      switchSubTab, 
+      applyTemplate, 
+      addButton, 
+      removeButton, 
+      copyJson, 
+      saveToCloudflare, 
+      shareToLine,
+      loadProjects,
+      saveProject,
+      loadProject,
+      deleteProject,
+      confirmDelete,
+      clearCurrentProject,
+      pushProject,
+      checkSheetsStatus,
+      initializeSheets,
+      formatDate,
+      liffLogin
+    };
+  }
+}).mount('#app');
 </script>
 </body>
 </html>
