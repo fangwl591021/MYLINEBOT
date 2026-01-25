@@ -5,9 +5,16 @@ import { standardPreset } from "./presets/standard.js";
 const output = document.getElementById("output");
 const genBtn = document.getElementById("gen");
 
-// ===== 後台狀態（只管資料，不管結構）=====
+// 表單
+const heroImage = document.getElementById("heroImage");
+const titleText = document.getElementById("titleText");
+const bodyText  = document.getElementById("bodyText");
+const ctaLabel  = document.getElementById("ctaLabel");
+const ctaLink   = document.getElementById("ctaLink");
+
+// ===== 後台狀態（只管資料）=====
 const state = {
-  type: "standard", // 之後可切換 preset
+  type: "standard",
   hero: {
     mode: "image",
     aspectRatio: "16:9",
@@ -22,22 +29,21 @@ const state = {
   }
 };
 
-// ===== 綁定後台操作（最小可用）=====
+// ===== 綁定後台操作 =====
 genBtn.onclick = () => {
-  // ⚠️ 目前先寫死，之後再接 UI
-  state.hero.imageUrl = "https://via.placeholder.com/800x450";
-  state.hero.link = "https://example.com";
+  state.hero.imageUrl = heroImage.value || "https://via.placeholder.com/800x450";
+  state.hero.link = ctaLink.value || "https://example.com";
 
   state.content.blocks = [
     {
       blockType: "title",
-      text: "康立 AI 元年",
+      text: titleText.value || "康立 AI 元年",
       size: "lg",
       align: "start"
     },
     {
       blockType: "text",
-      text: "從一張電子名片開始，打造你的 AI 商務分身。",
+      text: bodyText.value || "從一張電子名片開始，打造你的 AI 商務分身。",
       size: "md",
       align: "start",
       wrap: true
@@ -46,10 +52,10 @@ genBtn.onclick = () => {
 
   state.cta.buttons = [
     {
-      label: "立即了解",
+      label: ctaLabel.value || "立即了解",
       style: "primary",
       actionType: "uri",
-      actionValue: "https://example.com",
+      actionValue: ctaLink.value || "https://example.com",
       enabled: true
     }
   ];
@@ -59,26 +65,11 @@ genBtn.onclick = () => {
 
 // ===== 組裝 + 預覽（唯一出口）=====
 function render() {
-  let plugins = [];
-
-  switch (state.type) {
-    case "standard":
-      plugins = standardPreset(state);
-      break;
-
-    default:
-      console.error("Unknown preset type:", state.type);
-      return;
-  }
-
+  const plugins = standardPreset(state);
   const bubble = composeFlexBubble(plugins);
 
   output.textContent = JSON.stringify(
-    {
-      type: "flex",
-      altText: "Flex Preview",
-      contents: bubble
-    },
+    { type: "flex", altText: "Flex Preview", contents: bubble },
     null,
     2
   );
