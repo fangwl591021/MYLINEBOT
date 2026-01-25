@@ -1,13 +1,13 @@
 // app.js
 import { composeFlexBubble } from "./composer.js";
-import { HeroPlugin } from "./plugins/hero.js";
-import { ContentPlugin } from "./plugins/content.js";
-import { CTAPlugin } from "./plugins/cta.js";
+import { standardPreset } from "./presets/standard.js";
 
 const output = document.getElementById("output");
+const genBtn = document.getElementById("gen");
 
-// ===== 後台狀態（現在是記憶體，之後可存）=====
+// ===== 後台狀態（只管資料，不管結構）=====
 const state = {
+  type: "standard", // 之後可切換 preset
   hero: {
     mode: "image",
     aspectRatio: "16:9",
@@ -23,8 +23,8 @@ const state = {
 };
 
 // ===== 綁定後台操作（最小可用）=====
-document.getElementById("gen").onclick = () => {
-  // ⚠️ 這裡先寫死，下一步再接 UI
+genBtn.onclick = () => {
+  // ⚠️ 目前先寫死，之後再接 UI
   state.hero.imageUrl = "https://via.placeholder.com/800x450";
   state.hero.link = "https://example.com";
 
@@ -57,18 +57,28 @@ document.getElementById("gen").onclick = () => {
   render();
 };
 
-// ===== 組裝 + 預覽 =====
+// ===== 組裝 + 預覽（唯一出口）=====
 function render() {
-  const plugins = [];
+  let plugins = [];
 
-  if (state.hero) plugins.push(HeroPlugin(state.hero));
-  if (state.content) plugins.push(ContentPlugin(state.content));
-  if (state.cta) plugins.push(CTAPlugin(state.cta));
+  switch (state.type) {
+    case "standard":
+      plugins = standardPreset(state);
+      break;
+
+    default:
+      console.error("Unknown preset type:", state.type);
+      return;
+  }
 
   const bubble = composeFlexBubble(plugins);
 
   output.textContent = JSON.stringify(
-    { type: "flex", altText: "Flex Preview", contents: bubble },
+    {
+      type: "flex",
+      altText: "Flex Preview",
+      contents: bubble
+    },
     null,
     2
   );
