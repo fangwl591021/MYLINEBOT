@@ -5,49 +5,46 @@
   <title>Flex Plugin Composer（後台）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-                   "Noto Sans TC", sans-serif;
-      background: #f5f6f8;
-      padding: 20px;
-    }
-    h1 {
-      margin-bottom: 12px;
-    }
-    button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 6px;
-      background: #06c755;
-      color: #fff;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    button:hover {
-      opacity: 0.9;
-    }
-    pre {
-      margin-top: 16px;
-      padding: 16px;
-      background: #111;
-      color: #00ff9c;
-      border-radius: 8px;
-      max-height: 70vh;
-      overflow: auto;
-      font-size: 13px;
-    }
+    body { font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif; background:#f5f6f8; padding:20px; }
+    h1 { margin-bottom:12px; }
+    .card { background:#fff; border-radius:8px; padding:16px; margin-bottom:12px; }
+    .row { display:grid; grid-template-columns: 140px 1fr; gap:8px; align-items:center; margin-bottom:8px; }
+    input, textarea { width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; }
+    button { padding:8px 16px; border:none; border-radius:6px; background:#06c755; color:#fff; cursor:pointer; }
+    pre { margin-top:16px; padding:16px; background:#111; color:#00ff9c; border-radius:8px; max-height:60vh; overflow:auto; font-size:13px; }
   </style>
 </head>
 <body>
 
-  <h1>Flex 後台（最小可用）</h1>
+<h1>Flex 後台（最小表單版）</h1>
 
-  <!-- 後台操作入口 -->
+<div class="card">
+  <div class="row">
+    <label>Hero 圖片 URL</label>
+    <input id="heroImage" placeholder="https://..." />
+  </div>
+  <div class="row">
+    <label>標題</label>
+    <input id="titleText" placeholder="康立 AI 元年" />
+  </div>
+  <div class="row">
+    <label>內容</label>
+    <textarea id="bodyText" rows="3" placeholder="從一張電子名片開始，打造你的 AI 商務分身。"></textarea>
+  </div>
+  <div class="row">
+    <label>CTA 文字</label>
+    <input id="ctaLabel" placeholder="立即了解" />
+  </div>
+  <div class="row">
+    <label>CTA 連結</label>
+    <input id="ctaLink" placeholder="https://example.com" />
+  </div>
+
   <button id="gen">產生 Flex</button>
+</div>
 
-  <!-- 輸出結果 -->
-  <pre id="output">// 點擊「產生 Flex」後，這裡會出現 JSON</pre>
+<pre id="output">// 點擊「產生 Flex」後，這裡會出現 JSON</pre>
 
-  <script type="module" src="./app.js"></script>
+<script type="module" src="./app.js"></script>
 </body>
 </html>
